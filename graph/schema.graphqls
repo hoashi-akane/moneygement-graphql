@@ -2,6 +2,8 @@
 #
 # https://gqlgen.com/getting-started/
 
+scalar Date
+
 type Todo {
   id: ID!
   text: String!
@@ -23,6 +25,18 @@ input NewTodo {
   userId: String!
 }
 
+input NewSaving {
+  userId: String!
+}
+
+input NewSavingDetail{
+    savingId: Int!
+    savingAmount: Int!
+    savingDate: Date!
+    note: String!
+}
+
 type Mutation {
   createTodo(input: NewTodo!): Todo!
+  craeteSavingDetail(input: NewSavingDetail): Int
 }

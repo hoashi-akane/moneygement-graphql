@@ -15,6 +15,17 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) CraeteSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error) {
+	// 登録処理
+	 err := r.SAVDB.Table("savings_details").Create(&input).Error
+	//
+	if err != nil{
+		panic(fmt.Errorf("構文"))
+	}
+
+	return nil, nil
+}
+
 func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	panic(fmt.Errorf("not implemented"))
 }

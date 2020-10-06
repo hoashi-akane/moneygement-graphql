@@ -2,6 +2,17 @@
 
 package model
 
+type NewSaving struct {
+	UserID string `json:"userId"`
+}
+
+type NewSavingDetail struct {
+	SavingID     int    `json:"savingId"`
+	SavingAmount int    `json:"savingAmount"`
+	SavingDate   string `json:"savingDate"`
+	Note         string `json:"note"`
+}
+
 type NewTodo struct {
 	Text   string `json:"text"`
 	UserID string `json:"userId"`
