@@ -11,17 +11,32 @@ type Todo {
   user: User!
 }
 
+type SavingsDetail{
+    id: ID!
+    saving_id: Int!
+    saving_amount: Int!
+    saving_date: Date!
+    note: String!
+}
+
 type User {
   id: ID!
   name: String!
 }
 
+input savingsDetailsFilter{
+    savings_id: Int!
+    first: Int!
+    last: Int!
+}
+
 type Query {
   todos: [Todo!]!
+  savingsDetails(input: savingsDetailsFilter): [SavingsDetail!]!
 }
 
 input NewTodo {
-  text: String!
+  text: String
   userId: String!
 }
 
@@ -38,5 +53,5 @@ input NewSavingDetail{
 
 type Mutation {
   createTodo(input: NewTodo!): Todo!
-  craeteSavingDetail(input: NewSavingDetail): Int
+  createSavingDetail(input: NewSavingDetail): Int
 }

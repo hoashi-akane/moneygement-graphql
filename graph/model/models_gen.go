@@ -14,8 +14,16 @@ type NewSavingDetail struct {
 }
 
 type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+	Text   *string `json:"text"`
+	UserID string  `json:"userId"`
+}
+
+type SavingsDetail struct {
+	ID           string `json:"id"`
+	SavingID     int    `json:"saving_id"`
+	SavingAmount int    `json:"saving_amount"`
+	SavingDate   string `json:"saving_date"`
+	Note         string `json:"note"`
 }
 
 type Todo struct {
@@ -28,4 +36,10 @@ type Todo struct {
 type User struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type SavingsDetailsFilter struct {
+	SavingsID int `json:"savings_id"`
+	First     int `json:"first"`
+	Last      int `json:"last"`
 }
