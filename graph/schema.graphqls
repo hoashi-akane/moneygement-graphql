@@ -11,28 +11,80 @@ type Todo {
   user: User!
 }
 
+"""ユーザ関連"""
+type User {
+  "ユーザID"
+  id: ID!
+  "本名"
+  name: String!
+  "別称"
+  nickname: String!
+  "メールアドレス"
+  email: String!
+}
+
+
+
+"""貯金詳細"""
 type SavingsDetail{
+    "ID"
     id: ID!
+    "貯金ID"
     saving_id: Int!
+    "貯金金額"
     saving_amount: Int!
+    "貯金日"
     saving_date: Date!
+    "メモ"
     note: String!
 }
 
-type User {
-  id: ID!
-  name: String!
+"""貯金詳細取得フィルター"""
+input savingsDetailsFilter{
+    "貯金ID"
+    savings_id: Int!
+    "取得開始列"
+    first: Int!
+    "取得終了列"
+    last: Int!
 }
 
-input savingsDetailsFilter{
-    savings_id: Int!
-    first: Int!
-    last: Int!
+# 家計簿関連
+"""
+家計簿の収入詳細の入力
+"""
+input NewIncomeDetail{
+    "収入"
+    incomeId: Int!
+    "カテゴリID"
+    categoryId: Int!
+    "日付"
+    date: Date!
+    "収入額"
+    amount: Int!
+    "メモ"
+    note: String!
+}
+
+"""
+家計簿の支出詳細の入力
+"""
+input NewExpenseDetail{
+    "支出ID"
+    expenseId: Int!
+    "カテゴリID"
+    categoryId: Int!
+    "日付"
+    date: Date!
+    "支出額"
+    amount: Int!
+    "メモ"
+    note: String!
 }
 
 type Query {
   todos: [Todo!]!
-  savingsDetails(input: savingsDetailsFilter): [SavingsDetail!]!
+
 }
 
 input NewTodo {
@@ -53,5 +105,10 @@ input NewSavingDetail{
 
 type Mutation {
   createTodo(input: NewTodo!): Todo!
+  """貯金詳細作成"""
   createSavingDetail(input: NewSavingDetail): Int
+  """家計簿収入詳細作成"""
+  createIncomeDetail(input: NewIncomeDetail): Int
+  """家計簿支出詳細作成"""
+  createExpenseDetail(input: NewExpenseDetail): Int
 }
