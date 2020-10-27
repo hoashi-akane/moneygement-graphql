@@ -23,7 +23,12 @@ type User {
   email: String!
 }
 
+"""貯金関連"""
+type Saving{
+    "貯金詳細リスト取得"
+    savingsDetails(input: savingsDetailsFilter!): [SavingsDetail!]!
 
+}
 
 """貯金詳細"""
 type SavingsDetail{
@@ -84,7 +89,7 @@ input NewExpenseDetail{
 
 type Query {
   todos: [Todo!]!
-
+  saving: Saving!
 }
 
 input NewTodo {
