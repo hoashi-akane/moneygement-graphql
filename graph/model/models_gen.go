@@ -2,6 +2,34 @@
 
 package model
 
+// 家計簿の支出詳細の入力
+type NewExpenseDetail struct {
+	// 支出ID
+	ExpenseID int `json:"expenseId"`
+	// カテゴリID
+	CategoryID int `json:"categoryId"`
+	// 日付
+	Date string `json:"date"`
+	// 支出額
+	Amount int `json:"amount"`
+	// メモ
+	Note string `json:"note"`
+}
+
+// 家計簿の収入詳細の入力
+type NewIncomeDetail struct {
+	// 収入
+	IncomeID int `json:"incomeId"`
+	// カテゴリID
+	CategoryID int `json:"categoryId"`
+	// 日付
+	Date string `json:"date"`
+	// 収入額
+	Amount int `json:"amount"`
+	// メモ
+	Note string `json:"note"`
+}
+
 type NewSaving struct {
 	UserID string `json:"userId"`
 }
@@ -18,12 +46,24 @@ type NewTodo struct {
 	UserID string  `json:"userId"`
 }
 
+// 貯金関連
+type Saving struct {
+	// 貯金詳細リスト取得
+	SavingsDetails []*SavingsDetail `json:"savingsDetails"`
+}
+
+// 貯金詳細
 type SavingsDetail struct {
-	ID           string `json:"id"`
-	SavingID     int    `json:"saving_id"`
-	SavingAmount int    `json:"saving_amount"`
-	SavingDate   string `json:"saving_date"`
-	Note         string `json:"note"`
+	// ID
+	ID string `json:"id"`
+	// 貯金ID
+	SavingID int `json:"saving_id"`
+	// 貯金金額
+	SavingAmount int `json:"saving_amount"`
+	// 貯金日
+	SavingDate string `json:"saving_date"`
+	// メモ
+	Note string `json:"note"`
 }
 
 type Todo struct {
@@ -33,13 +73,24 @@ type Todo struct {
 	User *User  `json:"user"`
 }
 
+// ユーザ関連
 type User struct {
-	ID   string `json:"id"`
+	// ユーザID
+	ID string `json:"id"`
+	// 本名
 	Name string `json:"name"`
+	// 別称
+	Nickname string `json:"nickname"`
+	// メールアドレス
+	Email string `json:"email"`
 }
 
+// 貯金詳細取得フィルター
 type SavingsDetailsFilter struct {
+	// 貯金ID
 	SavingsID int `json:"savings_id"`
-	First     int `json:"first"`
-	Last      int `json:"last"`
+	// 取得開始列
+	First int `json:"first"`
+	// 取得終了列
+	Last int `json:"last"`
 }
