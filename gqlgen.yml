@@ -57,5 +57,31 @@ models:
 
   Saving:
     fields:
+      savingsId:
+        resolver: true
       savingsDetails:
+        resolver: true
+
+  LedgerEtc:
+    fields:
+      ledgers:
+        resolver: true
+      ledger:
+        resolver: true
+
+  Ledger:
+    fields:
+      incomes:
+        resolver: true
+      expenses:
+        resolver: true
+
+  Income:
+    fields:
+      category:
+        resolver: true
+
+  Expense:
+    fields:
+      category:
         resolver: true

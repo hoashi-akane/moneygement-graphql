@@ -8,4 +8,5 @@ import "github.com/jinzhu/gorm"
 type Resolver struct{
 	SAVDB *gorm.DB
 	USRDB *gorm.DB
+	BASEDB *gorm.DB
 }

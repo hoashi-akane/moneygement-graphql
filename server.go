@@ -21,11 +21,12 @@ func main() {
 	}
 	savingDb, err := gorm.Open("mysql", dataSourceSavings)
 	usrDb, err := gorm.Open("mysql", dataSourceUser)
+	baseDb, err := gorm.Open("mysql", dataSourceLedger)
 
 	if err != nil{
 		panic(err)
 	}
-	if savingDb == nil || usrDb == nil{
+	if savingDb == nil || usrDb == nil || baseDb == nil{
 		panic(err)
 	}
 	defer func(){
@@ -39,11 +40,17 @@ func main() {
 				panic(err)
 			}
 		}
+		if baseDb != nil{
+			if err := baseDb.Close(); err != nil{
+				panic(err)
+			}
+		}
 	}()
 	savingDb.LogMode(true)
 	usrDb.LogMode(true)
+	baseDb.LogMode(true)
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{SAVDB: savingDb, USRDB: usrDb}}))
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{SAVDB: savingDb, USRDB: usrDb, BASEDB: baseDb}}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/graphql", srv)

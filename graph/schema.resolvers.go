@@ -11,8 +11,37 @@ import (
 	"github.com/hoashi-akane/moneygement-graphql/graph/model"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *expenseResolver) Category(ctx context.Context, obj *model.Expense) (*model.Category, error) {
+	var category model.Category
+	r.BASEDB.Table("category").Take(&category, "id=?", obj.CategoryID)
+	return &category, nil
+}
+
+func (r *incomeResolver) Category(ctx context.Context, obj *model.Income) (*model.Category, error) {
+	var category model.Category
+	r.BASEDB.Table("category").Take(&category, "id=?", obj.CategoryID)
+	return &category, nil
+}
+
+func (r *ledgerResolver) Incomes(ctx context.Context, obj *model.Ledger) ([]*model.Income, error) {
+	r.BASEDB.Table("incomes").Find(&obj.Incomes, "ledger_id=?", &obj.ID)
+	return obj.Incomes, nil
+}
+
+func (r *ledgerResolver) Expenses(ctx context.Context, obj *model.Ledger) ([]*model.Expense, error) {
+	r.BASEDB.Table("expenses").Find(&obj.Expenses, "ledger_id=?", &obj.ID)
+	return obj.Expenses, nil
+}
+
+func (r *ledgerEtcResolver) Ledgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
+	r.BASEDB.Table("ledger").Find(&obj.Ledgers, "user_id=?", userID)
+	return obj.Ledgers, nil
+}
+
+func (r *ledgerEtcResolver) Ledger(ctx context.Context, obj *model.LedgerEtc, id int) (*model.Ledger, error) {
+	var ledger model.Ledger
+	r.BASEDB.Table("ledger").Take(&ledger, "id=?", id)
+	return &ledger, nil
 }
 
 func (r *mutationResolver) CreateSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error) {
@@ -27,34 +56,57 @@ func (r *mutationResolver) CreateSavingDetail(ctx context.Context, input *model.
 }
 
 func (r *mutationResolver) CreateIncomeDetail(ctx context.Context, input *model.NewIncomeDetail) (*int, error) {
-	panic(fmt.Errorf("not implemented"))
+	err := r.BASEDB.Table("incomes_details").Create(&input).Error
+	if err != nil {
+		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
+	}
+	return nil, nil
 }
 
 func (r *mutationResolver) CreateExpenseDetail(ctx context.Context, input *model.NewExpenseDetail) (*int, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	panic(fmt.Errorf("not implemented"))
+	err := r.BASEDB.Table("expenses_details").Create(&input).Error
+	if err != nil {
+		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
+	}
+	return nil, nil
 }
 
 func (r *queryResolver) Saving(ctx context.Context) (*model.Saving, error) {
-	//itemList := GetPreloads(ctx)
-	//for _, item := range itemList {
-	//	fmt.Println(item)
-	//}
-	saving := &model.Saving{nil}
+	saving := &model.Saving{}
 	return saving, nil
+}
+
+func (r *queryResolver) Ledger(ctx context.Context) (*model.LedgerEtc, error) {
+	ledger := &model.LedgerEtc{}
+	return ledger, nil
+}
+
+func (r *savingResolver) SavingsID(ctx context.Context, obj *model.Saving, userID int) (int, error) {
+	var result model.Savings
+	r.SAVDB.Table("savings").Select("id").Take(&result, "userid=?", userID)
+	return result.ID, nil
 }
 
 func (r *savingResolver) SavingsDetails(ctx context.Context, obj *model.Saving, input model.SavingsDetailsFilter) ([]*model.SavingsDetail, error) {
 	// 家計簿の利用履歴を取得
-	fmt.Println("実行")
+	fmt.Println("実行1")
 	var results []*model.SavingsDetail
 	// offset, limit句の代わりにPKに対してBETWEEN句を利用しカラムを指定。速度が早いっぽい
 	r.SAVDB.Order("saving_date DESC").Find(&results, "saving_id=? AND id BETWEEN ? AND ?", input.SavingsID, input.First, input.Last)
 	return results, nil
 }
+
+// Expense returns generated.ExpenseResolver implementation.
+func (r *Resolver) Expense() generated.ExpenseResolver { return &expenseResolver{r} }
+
+// Income returns generated.IncomeResolver implementation.
+func (r *Resolver) Income() generated.IncomeResolver { return &incomeResolver{r} }
+
+// Ledger returns generated.LedgerResolver implementation.
+func (r *Resolver) Ledger() generated.LedgerResolver { return &ledgerResolver{r} }
+
+// LedgerEtc returns generated.LedgerEtcResolver implementation.
+func (r *Resolver) LedgerEtc() generated.LedgerEtcResolver { return &ledgerEtcResolver{r} }
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
@@ -65,7 +117,10 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 // Saving returns generated.SavingResolver implementation.
 func (r *Resolver) Saving() generated.SavingResolver { return &savingResolver{r} }
 
+type expenseResolver struct{ *Resolver }
+type incomeResolver struct{ *Resolver }
+type ledgerResolver struct{ *Resolver }
+type ledgerEtcResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type savingResolver struct{ *Resolver }
-

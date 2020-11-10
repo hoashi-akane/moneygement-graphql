@@ -4,13 +4,6 @@
 
 scalar Date
 
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
-}
-
 """ユーザ関連"""
 type User {
   "ユーザID"
@@ -25,9 +18,20 @@ type User {
 
 """貯金関連"""
 type Saving{
+    "貯金ID取得"
+    savingsId(userId: Int!): Int!
     "貯金詳細リスト取得"
     savingsDetails(input: savingsDetailsFilter!): [SavingsDetail!]!
+}
 
+"""貯金"""
+type Savings{
+    "id"
+    id: Int!
+    "ユーザID"
+    userId: Int!
+    "目標貯金額"
+    targetAmount: Int!
 }
 
 """貯金詳細"""
@@ -55,12 +59,84 @@ input savingsDetailsFilter{
 }
 
 # 家計簿関連
-"""
-家計簿の収入詳細の入力
-"""
+"""家計簿関連"""
+type LedgerEtc{
+    "カテゴリ一覧"
+    categoryList: [Category!]!
+    "家計簿リスト取得"
+    ledgers(userId: Int!): [Ledger!]!
+    "家計簿取得"
+    ledger(id: Int!): Ledger!
+}
+
+"""家計簿"""
+type Ledger{
+    "ID"
+    id: Int!
+    "ユーザID"
+    userId: Int!
+    "アドバイザIDあれば"
+    adviserId: Int!
+    "名前"
+    name: String!
+    "作成日"
+    created_at: Date!
+    "収入リスト"
+    incomes: [Income!]!
+    "支出リスト"
+    expenses: [Expense!]!
+}
+
+"""収入"""
+type Income{
+    "ID"
+    id: Int!
+    "家計簿ID"
+    ledgerId: Int!
+    "カテゴリID"
+    categoryId: Int!
+    "カテゴリ"
+    category: Category!
+    "日付"
+    date: Date!
+    "金額"
+    amount: Int!
+    "メモ"
+    note: String!
+}
+
+"""支出"""
+type Expense{
+    "ID"
+    id: Int!
+    "家計簿ID"
+    ledgerId: Int!
+    "カテゴリID"
+    categoryId: Int!
+    "カテゴリ"
+    category: Category!
+    "日付"
+    date: Date!
+    "金額"
+    amount: Int!
+    "メモ"
+    note: String!
+}
+
+"""カテゴリ"""
+type Category{
+    "id"
+    Id: Int!
+    "名前"
+    Name: String!
+    "作成日"
+    created_at: Date!
+}
+
+"""家計簿の収入詳細の入力"""
 input NewIncomeDetail{
-    "収入"
-    incomeId: Int!
+    "家計簿ID"
+    ledgerId: Int!
     "カテゴリID"
     categoryId: Int!
     "日付"
@@ -71,12 +147,10 @@ input NewIncomeDetail{
     note: String!
 }
 
-"""
-家計簿の支出詳細の入力
-"""
+"""家計簿の支出詳細の入力"""
 input NewExpenseDetail{
-    "支出ID"
-    expenseId: Int!
+    "家計簿ID"
+    ledgerId: Int!
     "カテゴリID"
     categoryId: Int!
     "日付"
@@ -88,32 +162,33 @@ input NewExpenseDetail{
 }
 
 type Query {
-  todos: [Todo!]!
+  """貯金関連クエリ"""
   saving: Saving!
-}
-
-input NewTodo {
-  text: String
-  userId: String!
+  """家計簿関連クエリ"""
+  ledger: LedgerEtc!
 }
 
 input NewSaving {
   userId: String!
 }
 
+"""貯金詳細用入力"""
 input NewSavingDetail{
+    "貯金ID"
     savingId: Int!
+    "貯金額"
     savingAmount: Int!
+    "貯金をした日付"
     savingDate: Date!
+    "メモ"
     note: String!
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
-  """貯金詳細作成"""
+  "貯金詳細作成"
   createSavingDetail(input: NewSavingDetail): Int
-  """家計簿収入詳細作成"""
+  "家計簿収入詳細作成"
   createIncomeDetail(input: NewIncomeDetail): Int
-  """家計簿支出詳細作成"""
+  "家計簿支出詳細作成"
   createExpenseDetail(input: NewExpenseDetail): Int
 }
