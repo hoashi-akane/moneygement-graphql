@@ -56,7 +56,7 @@ func (r *mutationResolver) CreateSavingDetail(ctx context.Context, input *model.
 }
 
 func (r *mutationResolver) CreateIncomeDetail(ctx context.Context, input *model.NewIncomeDetail) (*int, error) {
-	err := r.BASEDB.Table("incomes_details").Create(&input).Error
+	err := r.BASEDB.Table("incomes").Create(&input).Error
 	if err != nil {
 		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
 	}
@@ -64,11 +64,25 @@ func (r *mutationResolver) CreateIncomeDetail(ctx context.Context, input *model.
 }
 
 func (r *mutationResolver) CreateExpenseDetail(ctx context.Context, input *model.NewExpenseDetail) (*int, error) {
-	err := r.BASEDB.Table("expenses_details").Create(&input).Error
+	err := r.BASEDB.Table("expenses").Create(&input).Error
 	if err != nil {
 		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
 	}
 	return nil, nil
+}
+
+func (r *mutationResolver) CreateLedger(ctx context.Context, input *model.NewLedger) (*int, error) {
+	err := r.BASEDB.Table("ledger").Create(input).Error
+	if err != nil {
+		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
+	}
+	return nil, nil
+}
+
+func (r *queryResolver) Login(ctx context.Context, input model.LoginInfo) (*model.User, error) {
+	var user model.User
+	r.USRDB.Table("users").Select("*").Joins("left join user_auth on users.id = user_auth.user_id").Find(&user, "email = ? and user_auth.password = ?", input.Email, input.Password)
+	return &user, nil
 }
 
 func (r *queryResolver) Saving(ctx context.Context) (*model.Saving, error) {
