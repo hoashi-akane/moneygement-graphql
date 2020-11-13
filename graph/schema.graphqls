@@ -7,7 +7,7 @@ scalar Date
 """ユーザ関連"""
 type User {
   "ユーザID"
-  id: ID!
+  id: Int!
   "本名"
   name: String!
   "別称"
@@ -16,10 +16,30 @@ type User {
   email: String!
 }
 
+"""ユーザ認証情報"""
+type UserAuth{
+    "ユーザID"
+    userId: Int!
+    "パスワード"
+    password: String!
+}
+
 """ログイン用入力"""
 input LoginInfo {
     "メールアドレス"
     email:String!
+    "パスワード"
+    password: String!
+}
+
+"""ユーザ作成用入力"""
+input NewUser{
+    "名前"
+    name: String!
+    "別名"
+    nickName: String!
+    "メールアドレス"
+    email: String!
     "パスワード"
     password: String!
 }
@@ -178,6 +198,7 @@ input NewExpenseDetail{
 }
 
 type Query {
+  """ログイン用クエリ"""
   login(input: LoginInfo!): User!
   """貯金関連クエリ"""
   saving: Saving!
@@ -202,6 +223,8 @@ input NewSavingDetail{
 }
 
 type Mutation {
+  "ユーザ登録"
+  createUser(input: NewUser): User
   "貯金詳細作成"
   createSavingDetail(input: NewSavingDetail): Int
   "家計簿収入詳細作成"

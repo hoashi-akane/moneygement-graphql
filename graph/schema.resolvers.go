@@ -44,6 +44,24 @@ func (r *ledgerEtcResolver) Ledger(ctx context.Context, obj *model.LedgerEtc, id
 	return &ledger, nil
 }
 
+func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error) {
+	var user = model.User{Nickname: input.NickName, Name: input.Name, Email: input.Email}
+
+	err := r.USRDB.Table("users").Create(&user).Error
+	if err != nil {
+		panic("エラ-")
+		return nil, nil
+	}
+	r.USRDB.Table("users").Find(&user, "email = ?", user.Email)
+
+	var auth = model.UserAuth{UserID: user.ID, Password: input.Password}
+	err = r.USRDB.Table("user_auth").Create(&auth).Error
+	if err != nil {
+		panic("エラー")
+	}
+	return &user, nil
+}
+
 func (r *mutationResolver) CreateSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error) {
 	// 登録処理
 	err := r.SAVDB.Table("savings_details").Create(&input).Error
