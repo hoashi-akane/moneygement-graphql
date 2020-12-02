@@ -7,7 +7,7 @@ scalar Date
 """ユーザ関連"""
 type User {
   "ユーザID"
-  id: ID!
+  id: Int!
   "本名"
   name: String!
   "別称"
@@ -16,10 +16,68 @@ type User {
   email: String!
 }
 
+"""ユーザ認証情報"""
+type UserAuth{
+    "ユーザID"
+    userId: Int!
+    "パスワード"
+    password: String!
+}
+
+"""ログイン用入力"""
+input LoginInfo {
+    "メールアドレス"
+    email:String!
+    "パスワード"
+    password: String!
+}
+
+"""ユーザ作成用入力"""
+input NewUser{
+    "名前"
+    name: String!
+    "別名"
+    nickName: String!
+    "メールアドレス"
+    email: String!
+    "パスワード"
+    password: String!
+}
+
+"""グループ"""
+type Group{
+    "id"
+    id: Int!
+    "作成者"
+    author: Int!
+    "グループ名"
+    name: String!
+}
+
+"""ユーザグループ間要素"""
+type Enrollment{
+    "id"
+    id: Int!
+    "ユーザid"
+    user_id: Int!
+    "グループid"
+    group_id: Int!
+}
+
+"""グループ作成入力"""
+input NewGroup{
+    "ユーザID"
+    userId: Int!
+    "グループ名"
+    groupName: String!
+}
+
 """貯金関連"""
 type Saving{
-    "貯金ID取得"
-    savingsId(userId: Int!): Int!
+    "貯金取得"
+    savingDetail(userId: Int!): Savings!
+    "貯金額・収入額の和を返す"
+    savingAmount(userId: Int!): SavingAmountList!
     "貯金詳細リスト取得"
     savingsDetails(input: savingsDetailsFilter!): [SavingsDetail!]!
 }
@@ -32,6 +90,12 @@ type Savings{
     userId: Int!
     "目標貯金額"
     targetAmount: Int!
+}
+
+"""貯金額と収入額の和"""
+type SavingAmountList{
+    savingAmount: Int!
+    expenseAmount: Int!
 }
 
 """貯金詳細"""
@@ -133,6 +197,14 @@ type Category{
     created_at: Date!
 }
 
+"""家計簿テーブル作成"""
+input NewLedger{
+    "ユーザID"
+    userId: Int!
+    "家計簿名"
+    name: String!
+}
+
 """家計簿の収入詳細の入力"""
 input NewIncomeDetail{
     "家計簿ID"
@@ -162,6 +234,8 @@ input NewExpenseDetail{
 }
 
 type Query {
+  """ログイン用クエリ"""
+  login(input: LoginInfo!): User!
   """貯金関連クエリ"""
   saving: Saving!
   """家計簿関連クエリ"""
@@ -185,10 +259,16 @@ input NewSavingDetail{
 }
 
 type Mutation {
+  "ユーザ登録"
+  createUser(input: NewUser): User
+  "グループ作成"
+  createGroup(input: NewGroup): Int
   "貯金詳細作成"
   createSavingDetail(input: NewSavingDetail): Int
   "家計簿収入詳細作成"
   createIncomeDetail(input: NewIncomeDetail): Int
   "家計簿支出詳細作成"
   createExpenseDetail(input: NewExpenseDetail): Int
+  "家計簿作成"
+  createLedger(input: NewLedger): Int
 }
