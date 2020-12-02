@@ -57,9 +57,25 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser)
 	var auth = model.UserAuth{UserID: user.ID, Password: input.Password}
 	err = r.USRDB.Table("user_auth").Create(&auth).Error
 	if err != nil {
-		panic("エラー")
+		return nil, nil
 	}
 	return &user, nil
+}
+
+func (r *mutationResolver) CreateGroup(ctx context.Context, input *model.NewGroup) (*int, error) {
+	// グループ作成
+	var group = model.Group{Author: input.UserID, Name: input.GroupName}
+	err := r.USRDB.Table("groups").Create(&group).Error
+	if err != nil {
+		return nil, nil
+	}
+	// グループに自身を追加
+	var enrollment = model.Enrollment{UserID: group.Author, GroupID: group.ID}
+	err = r.USRDB.Table("enrollment").Create(&enrollment).Error
+	if err != nil {
+		return nil, nil
+	}
+	return nil, nil
 }
 
 func (r *mutationResolver) CreateSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error) {
@@ -113,15 +129,20 @@ func (r *queryResolver) Ledger(ctx context.Context) (*model.LedgerEtc, error) {
 	return ledger, nil
 }
 
-func (r *savingResolver) SavingsID(ctx context.Context, obj *model.Saving, userID int) (int, error) {
+func (r *savingResolver) SavingDetail(ctx context.Context, obj *model.Saving, userID int) (*model.Savings, error) {
 	var result model.Savings
-	r.SAVDB.Table("savings").Select("id").Take(&result, "userid=?", userID)
-	return result.ID, nil
+	r.SAVDB.Table("savings").Take(&result, "userid=?", userID)
+	return &result, nil
+}
+
+func (r *savingResolver) SavingAmount(ctx context.Context, obj *model.Saving, userID int) (*model.SavingAmountList, error) {
+	var result model.SavingAmountList
+	r.SAVDB.Table("savings s").Select("COALESCE(SUM(sd.saving_amount),0) as saving_amount  , COALESCE(SUM(e.expense_amount), 0) as expense_amount").Joins("left outer join savings_details sd ON s.id = sd.saving_id").Joins("LEFT OUTER JOIN expenses e ON s.id = e.saving_id").Find(&result, "userid=?", userID)
+	return &result, nil
 }
 
 func (r *savingResolver) SavingsDetails(ctx context.Context, obj *model.Saving, input model.SavingsDetailsFilter) ([]*model.SavingsDetail, error) {
 	// 家計簿の利用履歴を取得
-	fmt.Println("実行1")
 	var results []*model.SavingsDetail
 	// offset, limit句の代わりにPKに対してBETWEEN句を利用しカラムを指定。速度が早いっぽい
 	r.SAVDB.Order("saving_date DESC").Find(&results, "saving_id=? AND id BETWEEN ? AND ?", input.SavingsID, input.First, input.Last)

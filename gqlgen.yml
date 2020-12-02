@@ -57,9 +57,11 @@ models:
 
   Saving:
     fields:
-      savingsId:
+      savingDetail:
         resolver: true
       savingsDetails:
+        resolver: true
+      savingAmount:
         resolver: true
 
   LedgerEtc:

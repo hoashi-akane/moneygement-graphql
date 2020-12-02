@@ -44,10 +44,40 @@ input NewUser{
     password: String!
 }
 
+"""グループ"""
+type Group{
+    "id"
+    id: Int!
+    "作成者"
+    author: Int!
+    "グループ名"
+    name: String!
+}
+
+"""ユーザグループ間要素"""
+type Enrollment{
+    "id"
+    id: Int!
+    "ユーザid"
+    user_id: Int!
+    "グループid"
+    group_id: Int!
+}
+
+"""グループ作成入力"""
+input NewGroup{
+    "ユーザID"
+    userId: Int!
+    "グループ名"
+    groupName: String!
+}
+
 """貯金関連"""
 type Saving{
-    "貯金ID取得"
-    savingsId(userId: Int!): Int!
+    "貯金取得"
+    savingDetail(userId: Int!): Savings!
+    "貯金額・収入額の和を返す"
+    savingAmount(userId: Int!): SavingAmountList!
     "貯金詳細リスト取得"
     savingsDetails(input: savingsDetailsFilter!): [SavingsDetail!]!
 }
@@ -60,6 +90,12 @@ type Savings{
     userId: Int!
     "目標貯金額"
     targetAmount: Int!
+}
+
+"""貯金額と収入額の和"""
+type SavingAmountList{
+    savingAmount: Int!
+    expenseAmount: Int!
 }
 
 """貯金詳細"""
@@ -225,6 +261,8 @@ input NewSavingDetail{
 type Mutation {
   "ユーザ登録"
   createUser(input: NewUser): User
+  "グループ作成"
+  createGroup(input: NewGroup): Int
   "貯金詳細作成"
   createSavingDetail(input: NewSavingDetail): Int
   "家計簿収入詳細作成"
