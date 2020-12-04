@@ -70,6 +70,8 @@ models:
         resolver: true
       ledger:
         resolver: true
+      shareLedgers:
+        resolver: true
 
   Ledger:
     fields:
