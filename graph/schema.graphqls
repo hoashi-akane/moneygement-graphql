@@ -70,6 +70,8 @@ input NewGroup{
     userId: Int!
     "グループ名"
     groupName: String!
+    "家計簿名"
+    ledgerName: String!
 }
 
 """貯金関連"""
@@ -131,6 +133,8 @@ type LedgerEtc{
     ledgers(userId: Int!): [Ledger!]!
     "家計簿取得"
     ledger(id: Int!): Ledger!
+    "共有家計簿リスト取得"
+    shareLedgers(userId: Int!): [Ledger!]!
 }
 
 """家計簿"""
@@ -141,6 +145,8 @@ type Ledger{
     userId: Int!
     "アドバイザIDあれば"
     adviserId: Int!
+    "グループIDあれば"
+    groupId: Int!
     "名前"
     name: String!
     "作成日"

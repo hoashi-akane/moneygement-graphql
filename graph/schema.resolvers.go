@@ -44,6 +44,17 @@ func (r *ledgerEtcResolver) Ledger(ctx context.Context, obj *model.LedgerEtc, id
 	return &ledger, nil
 }
 
+func (r *ledgerEtcResolver) ShareLedgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
+	var enrollment []*model.Enrollment
+	r.USRDB.Table("enrollment").Find(&enrollment, "user_id=?", userID)
+	var groupSlice []int
+	for _, value := range enrollment {
+		groupSlice = append(groupSlice, value.GroupID)
+	}
+	r.BASEDB.Table("ledger").Find(&obj.Ledgers, "group_id IN (?)", groupSlice)
+	return obj.Ledgers, nil
+}
+
 func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error) {
 	var user = model.User{Nickname: input.NickName, Name: input.Name, Email: input.Email}
 
@@ -69,8 +80,12 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input *model.NewGrou
 	if err != nil {
 		return nil, nil
 	}
-	// グループに自身を追加
 	var enrollment = model.Enrollment{UserID: group.Author, GroupID: group.ID}
+	var ledger = model.Ledger{GroupID: group.ID, Name: input.LedgerName, UserID: input.UserID}
+	err = r.BASEDB.Table("ledger").Select("group_id", "name", "user_id").Create(&ledger).Error
+	if err != nil {
+		return nil, nil
+	}
 	err = r.USRDB.Table("enrollment").Create(&enrollment).Error
 	if err != nil {
 		return nil, nil
