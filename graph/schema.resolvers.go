@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/hoashi-akane/moneygement-graphql/graph/generated"
 	"github.com/hoashi-akane/moneygement-graphql/graph/model"
@@ -126,6 +127,29 @@ func (r *mutationResolver) CreateLedger(ctx context.Context, input *model.NewLed
 		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
 	}
 	return nil, nil
+}
+
+func (r *mutationResolver) DeleteGroup(ctx context.Context, groupID int) (*int, error) {
+//	グループ削除、　一緒に家計簿も削除する必要がある
+//	0またはnilだと全カラム削除されてしまうので注意
+	if groupID == 0 {
+		return nil, nil
+	}
+	var group = model.Group{ID: groupID}
+	// グループ削除
+	err := r.USRDB.Table("groups").Delete(&group).Error
+	if err != nil{
+		log.Fatal("エラー")
+	}
+	var ledger = model.Ledger{GroupID: groupID}
+
+	// 家計簿削除
+	err = r.BASEDB.Table("ledger").Where("group_id =?", groupID).Delete(ledger).Error
+	if err != nil{
+		log.Fatal("エラー")
+	}
+	return nil, nil
+
 }
 
 func (r *queryResolver) Login(ctx context.Context, input model.LoginInfo) (*model.User, error) {

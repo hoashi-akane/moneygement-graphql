@@ -277,4 +277,6 @@ type Mutation {
   createExpenseDetail(input: NewExpenseDetail): Int
   "家計簿作成"
   createLedger(input: NewLedger): Int
+  "グループ削除"
+  deleteGroup(groupId: Int!): Int
 }
