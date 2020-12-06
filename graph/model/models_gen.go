@@ -12,6 +12,29 @@ type Category struct {
 	CreatedAt string `json:"created_at"`
 }
 
+// チャット
+type Chat struct {
+	// id
+	ID int `json:"id"`
+	// 家計簿ID
+	LedgerID int `json:"ledgerId"`
+	// ユーザID
+	UserID int `json:"userId"`
+	// コメント
+	Comment string `json:"comment"`
+	// 作成日
+	CreatedAt string `json:"createdAt"`
+	// ニックネーム
+	Nickname string `json:"nickname"`
+}
+
+// チャット一覧取得用フィルター
+type ChatFilter struct {
+	LedgerID int `json:"ledgerId"`
+	First    int `json:"first"`
+	Last     int `json:"last"`
+}
+
 // ユーザグループ間要素
 type Enrollment struct {
 	// id
@@ -106,6 +129,16 @@ type LoginInfo struct {
 	Email string `json:"email"`
 	// パスワード
 	Password string `json:"password"`
+}
+
+// チャット作成入力
+type NewChat struct {
+	// 家計簿ID
+	LedgerID int `json:"ledgerId"`
+	// ユーザID
+	UserID int `json:"userId"`
+	// コメント
+	Comment string `json:"comment"`
 }
 
 // 家計簿の支出詳細の入力

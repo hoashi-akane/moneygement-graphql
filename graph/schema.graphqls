@@ -74,6 +74,39 @@ input NewGroup{
     ledgerName: String!
 }
 
+"""チャット一覧取得用フィルター"""
+input ChatFilter{
+    ledgerId: Int!
+    first: Int!
+    last: Int!
+}
+
+"""チャット"""
+type Chat{
+    "id"
+    id: Int!
+    "家計簿ID"
+    ledgerId: Int!
+    "ユーザID"
+    userId: Int!
+    "コメント"
+    comment: String!
+    "作成日"
+    createdAt: Date!
+    "ニックネーム"
+    nickname: String!
+}
+
+"""チャット作成入力"""
+input NewChat{
+    "家計簿ID"
+    ledgerId: Int!
+    "ユーザID"
+    userId: Int!
+    "コメント"
+    comment: String!
+}
+
 """貯金関連"""
 type Saving{
     "貯金取得"
@@ -239,15 +272,6 @@ input NewExpenseDetail{
     note: String!
 }
 
-type Query {
-  """ログイン用クエリ"""
-  login(input: LoginInfo!): User!
-  """貯金関連クエリ"""
-  saving: Saving!
-  """家計簿関連クエリ"""
-  ledger: LedgerEtc!
-}
-
 input NewSaving {
   userId: String!
 }
@@ -264,11 +288,24 @@ input NewSavingDetail{
     note: String!
 }
 
+type Query {
+  """ログイン用クエリ"""
+  login(input: LoginInfo!): User!
+  """チャット一覧"""
+  chatList(input: ChatFilter!): [Chat!]!
+  """貯金関連クエリ"""
+  saving: Saving!
+  """家計簿関連クエリ"""
+  ledger: LedgerEtc!
+}
+
 type Mutation {
   "ユーザ登録"
   createUser(input: NewUser): User
   "グループ作成"
   createGroup(input: NewGroup): Int
+  "チャット登録"
+  createChat(input: NewChat): Int
   "貯金詳細作成"
   createSavingDetail(input: NewSavingDetail): Int
   "家計簿収入詳細作成"

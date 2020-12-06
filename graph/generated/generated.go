@@ -54,6 +54,15 @@ type ComplexityRoot struct {
 		Name      func(childComplexity int) int
 	}
 
+	Chat struct {
+		Comment   func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		LedgerID  func(childComplexity int) int
+		Nickname  func(childComplexity int) int
+		UserID    func(childComplexity int) int
+	}
+
 	Enrollment struct {
 		GroupID func(childComplexity int) int
 		ID      func(childComplexity int) int
@@ -105,6 +114,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		CreateChat          func(childComplexity int, input *model.NewChat) int
 		CreateExpenseDetail func(childComplexity int, input *model.NewExpenseDetail) int
 		CreateGroup         func(childComplexity int, input *model.NewGroup) int
 		CreateIncomeDetail  func(childComplexity int, input *model.NewIncomeDetail) int
@@ -115,9 +125,10 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Ledger func(childComplexity int) int
-		Login  func(childComplexity int, input model.LoginInfo) int
-		Saving func(childComplexity int) int
+		ChatList func(childComplexity int, input model.ChatFilter) int
+		Ledger   func(childComplexity int) int
+		Login    func(childComplexity int, input model.LoginInfo) int
+		Saving   func(childComplexity int) int
 	}
 
 	Saving struct {
@@ -176,6 +187,7 @@ type LedgerEtcResolver interface {
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error)
 	CreateGroup(ctx context.Context, input *model.NewGroup) (*int, error)
+	CreateChat(ctx context.Context, input *model.NewChat) (*int, error)
 	CreateSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error)
 	CreateIncomeDetail(ctx context.Context, input *model.NewIncomeDetail) (*int, error)
 	CreateExpenseDetail(ctx context.Context, input *model.NewExpenseDetail) (*int, error)
@@ -184,6 +196,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	Login(ctx context.Context, input model.LoginInfo) (*model.User, error)
+	ChatList(ctx context.Context, input model.ChatFilter) ([]*model.Chat, error)
 	Saving(ctx context.Context) (*model.Saving, error)
 	Ledger(ctx context.Context) (*model.LedgerEtc, error)
 }
@@ -228,6 +241,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Category.Name(childComplexity), true
+
+	case "Chat.comment":
+		if e.complexity.Chat.Comment == nil {
+			break
+		}
+
+		return e.complexity.Chat.Comment(childComplexity), true
+
+	case "Chat.createdAt":
+		if e.complexity.Chat.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Chat.CreatedAt(childComplexity), true
+
+	case "Chat.id":
+		if e.complexity.Chat.ID == nil {
+			break
+		}
+
+		return e.complexity.Chat.ID(childComplexity), true
+
+	case "Chat.ledgerId":
+		if e.complexity.Chat.LedgerID == nil {
+			break
+		}
+
+		return e.complexity.Chat.LedgerID(childComplexity), true
+
+	case "Chat.nickname":
+		if e.complexity.Chat.Nickname == nil {
+			break
+		}
+
+		return e.complexity.Chat.Nickname(childComplexity), true
+
+	case "Chat.userId":
+		if e.complexity.Chat.UserID == nil {
+			break
+		}
+
+		return e.complexity.Chat.UserID(childComplexity), true
 
 	case "Enrollment.group_id":
 		if e.complexity.Enrollment.GroupID == nil {
@@ -468,6 +523,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LedgerEtc.ShareLedgers(childComplexity, args["userId"].(int)), true
 
+	case "Mutation.createChat":
+		if e.complexity.Mutation.CreateChat == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createChat_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateChat(childComplexity, args["input"].(*model.NewChat)), true
+
 	case "Mutation.createExpenseDetail":
 		if e.complexity.Mutation.CreateExpenseDetail == nil {
 			break
@@ -551,6 +618,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteGroup(childComplexity, args["groupId"].(int)), true
+
+	case "Query.chatList":
+		if e.complexity.Query.ChatList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_chatList_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ChatList(childComplexity, args["input"].(model.ChatFilter)), true
 
 	case "Query.ledger":
 		if e.complexity.Query.Ledger == nil {
@@ -866,6 +945,39 @@ input NewGroup{
     ledgerName: String!
 }
 
+"""チャット一覧取得用フィルター"""
+input ChatFilter{
+    ledgerId: Int!
+    first: Int!
+    last: Int!
+}
+
+"""チャット"""
+type Chat{
+    "id"
+    id: Int!
+    "家計簿ID"
+    ledgerId: Int!
+    "ユーザID"
+    userId: Int!
+    "コメント"
+    comment: String!
+    "作成日"
+    createdAt: Date!
+    "ニックネーム"
+    nickname: String!
+}
+
+"""チャット作成入力"""
+input NewChat{
+    "家計簿ID"
+    ledgerId: Int!
+    "ユーザID"
+    userId: Int!
+    "コメント"
+    comment: String!
+}
+
 """貯金関連"""
 type Saving{
     "貯金取得"
@@ -1031,15 +1143,6 @@ input NewExpenseDetail{
     note: String!
 }
 
-type Query {
-  """ログイン用クエリ"""
-  login(input: LoginInfo!): User!
-  """貯金関連クエリ"""
-  saving: Saving!
-  """家計簿関連クエリ"""
-  ledger: LedgerEtc!
-}
-
 input NewSaving {
   userId: String!
 }
@@ -1056,11 +1159,24 @@ input NewSavingDetail{
     note: String!
 }
 
+type Query {
+  """ログイン用クエリ"""
+  login(input: LoginInfo!): User!
+  """チャット一覧"""
+  chatList(input: ChatFilter!): [Chat!]!
+  """貯金関連クエリ"""
+  saving: Saving!
+  """家計簿関連クエリ"""
+  ledger: LedgerEtc!
+}
+
 type Mutation {
   "ユーザ登録"
   createUser(input: NewUser): User
   "グループ作成"
   createGroup(input: NewGroup): Int
+  "チャット登録"
+  createChat(input: NewChat): Int
   "貯金詳細作成"
   createSavingDetail(input: NewSavingDetail): Int
   "家計簿収入詳細作成"
@@ -1121,6 +1237,21 @@ func (ec *executionContext) field_LedgerEtc_shareLedgers_args(ctx context.Contex
 		}
 	}
 	args["userId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createChat_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.NewChat
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalONewChat2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐNewChat(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1241,6 +1372,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_chatList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ChatFilter
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNChatFilter2githubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐChatFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1445,6 +1591,216 @@ func (ec *executionContext) _Category_created_at(ctx context.Context, field grap
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNDate2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Chat_id(ctx context.Context, field graphql.CollectedField, obj *model.Chat) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Chat",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Chat_ledgerId(ctx context.Context, field graphql.CollectedField, obj *model.Chat) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Chat",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LedgerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Chat_userId(ctx context.Context, field graphql.CollectedField, obj *model.Chat) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Chat",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Chat_comment(ctx context.Context, field graphql.CollectedField, obj *model.Chat) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Chat",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comment, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Chat_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Chat) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Chat",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNDate2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Chat_nickname(ctx context.Context, field graphql.CollectedField, obj *model.Chat) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Chat",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Nickname, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Enrollment_id(ctx context.Context, field graphql.CollectedField, obj *model.Enrollment) (ret graphql.Marshaler) {
@@ -2666,6 +3022,45 @@ func (ec *executionContext) _Mutation_createGroup(ctx context.Context, field gra
 	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createChat(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createChat_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateChat(rctx, args["input"].(*model.NewChat))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createSavingDetail(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2901,6 +3296,48 @@ func (ec *executionContext) _Query_login(ctx context.Context, field graphql.Coll
 	res := resTmp.(*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_chatList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_chatList_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ChatList(rctx, args["input"].(model.ChatFilter))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Chat)
+	fc.Result = res
+	return ec.marshalNChat2ᚕᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐChatᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_saving(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4817,6 +5254,42 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputChatFilter(ctx context.Context, obj interface{}) (model.ChatFilter, error) {
+	var it model.ChatFilter
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "ledgerId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ledgerId"))
+			it.LedgerID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "first":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+			it.First, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "last":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+			it.Last, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLoginInfo(ctx context.Context, obj interface{}) (model.LoginInfo, error) {
 	var it model.LoginInfo
 	var asMap = obj.(map[string]interface{})
@@ -4836,6 +5309,42 @@ func (ec *executionContext) unmarshalInputLoginInfo(ctx context.Context, obj int
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
 			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNewChat(ctx context.Context, obj interface{}) (model.NewChat, error) {
+	var it model.NewChat
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "ledgerId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ledgerId"))
+			it.LedgerID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			it.UserID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "comment":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
+			it.Comment, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5188,6 +5697,58 @@ func (ec *executionContext) _Category(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "created_at":
 			out.Values[i] = ec._Category_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var chatImplementors = []string{"Chat"}
+
+func (ec *executionContext) _Chat(ctx context.Context, sel ast.SelectionSet, obj *model.Chat) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, chatImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Chat")
+		case "id":
+			out.Values[i] = ec._Chat_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ledgerId":
+			out.Values[i] = ec._Chat_ledgerId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "userId":
+			out.Values[i] = ec._Chat_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "comment":
+			out.Values[i] = ec._Chat_comment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._Chat_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "nickname":
+			out.Values[i] = ec._Chat_nickname(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5576,6 +6137,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_createUser(ctx, field)
 		case "createGroup":
 			out.Values[i] = ec._Mutation_createGroup(ctx, field)
+		case "createChat":
+			out.Values[i] = ec._Mutation_createChat(ctx, field)
 		case "createSavingDetail":
 			out.Values[i] = ec._Mutation_createSavingDetail(ctx, field)
 		case "createIncomeDetail":
@@ -5621,6 +6184,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_login(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "chatList":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_chatList(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -6234,6 +6811,58 @@ func (ec *executionContext) marshalNCategory2ᚖgithubᚗcomᚋhoashiᚑakaneᚋ
 	return ec._Category(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNChat2ᚕᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐChatᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Chat) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNChat2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐChat(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNChat2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐChat(ctx context.Context, sel ast.SelectionSet, v *model.Chat) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Chat(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNChatFilter2githubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐChatFilter(ctx context.Context, v interface{}) (model.ChatFilter, error) {
+	res, err := ec.unmarshalInputChatFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNDate2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6832,6 +7461,14 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	return graphql.MarshalInt(*v)
+}
+
+func (ec *executionContext) unmarshalONewChat2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐNewChat(ctx context.Context, v interface{}) (*model.NewChat, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNewChat(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalONewExpenseDetail2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐNewExpenseDetail(ctx context.Context, v interface{}) (*model.NewExpenseDetail, error) {

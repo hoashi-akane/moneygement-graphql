@@ -94,6 +94,16 @@ func (r *mutationResolver) CreateGroup(ctx context.Context, input *model.NewGrou
 	return nil, nil
 }
 
+func (r *mutationResolver) CreateChat(ctx context.Context, input *model.NewChat) (*int, error) {
+	var err = r.USRDB.Table("chat").Create(&input).Error
+	if err != nil {
+		fmt.Println("エラー")
+		return nil, nil
+	}
+	var result = 1
+	return &result, nil
+}
+
 func (r *mutationResolver) CreateSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error) {
 	// 登録処理
 	err := r.SAVDB.Table("savings_details").Create(&input).Error
@@ -130,32 +140,37 @@ func (r *mutationResolver) CreateLedger(ctx context.Context, input *model.NewLed
 }
 
 func (r *mutationResolver) DeleteGroup(ctx context.Context, groupID int) (*int, error) {
-//	グループ削除、　一緒に家計簿も削除する必要がある
-//	0またはnilだと全カラム削除されてしまうので注意
+	//	グループ削除、　一緒に家計簿も削除する必要がある
+	//	0またはnilだと全カラム削除されてしまうので注意
 	if groupID == 0 {
 		return nil, nil
 	}
 	var group = model.Group{ID: groupID}
 	// グループ削除
 	err := r.USRDB.Table("groups").Delete(&group).Error
-	if err != nil{
+	if err != nil {
 		log.Fatal("エラー")
 	}
 	var ledger = model.Ledger{GroupID: groupID}
 
 	// 家計簿削除
 	err = r.BASEDB.Table("ledger").Where("group_id =?", groupID).Delete(ledger).Error
-	if err != nil{
+	if err != nil {
 		log.Fatal("エラー")
 	}
 	return nil, nil
-
 }
 
 func (r *queryResolver) Login(ctx context.Context, input model.LoginInfo) (*model.User, error) {
 	var user model.User
 	r.USRDB.Table("users").Select("*").Joins("left join user_auth on users.id = user_auth.user_id").Find(&user, "email = ? and user_auth.password = ?", input.Email, input.Password)
 	return &user, nil
+}
+
+func (r *queryResolver) ChatList(ctx context.Context, input model.ChatFilter) ([]*model.Chat, error) {
+	var chatList []*model.Chat
+	r.USRDB.Order("created_at desc").Table("chat").Select("chat.id, chat.ledger_id, chat.user_id, chat.comment, chat.created_at, users.nickname").Joins("left join users on chat.user_id = users.id").Find(&chatList, "ledger_id = ?", input.LedgerID).Offset(input.First).Limit(input.Last)
+	return chatList, nil
 }
 
 func (r *queryResolver) Saving(ctx context.Context) (*model.Saving, error) {
