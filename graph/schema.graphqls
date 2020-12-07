@@ -44,6 +44,18 @@ input NewUser{
     password: String!
 }
 
+"""アドバイザ作成用入力"""
+input NewAdviser{
+    "id"
+    id: Int!
+    "本名"
+    name: String!
+    "説明"
+    introduction: String!
+    "アドバイザ名"
+    adviserName: String!
+}
+
 """グループ"""
 type Group{
     "id"
@@ -302,6 +314,8 @@ type Query {
 type Mutation {
   "ユーザ登録"
   createUser(input: NewUser): User
+  "アドバイザ登録"
+  createAdviser(input: NewAdviser): Int
   "グループ作成"
   createGroup(input: NewGroup): Int
   "チャット登録"

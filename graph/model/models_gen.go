@@ -131,6 +131,18 @@ type LoginInfo struct {
 	Password string `json:"password"`
 }
 
+// アドバイザ作成用入力
+type NewAdviser struct {
+	// id
+	ID int `json:"id"`
+	// 本名
+	Name string `json:"name"`
+	// 説明
+	Introduction string `json:"introduction"`
+	// アドバイザ名
+	AdviserName string `json:"adviserName"`
+}
+
 // チャット作成入力
 type NewChat struct {
 	// 家計簿ID

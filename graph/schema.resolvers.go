@@ -74,6 +74,18 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser)
 	return &user, nil
 }
 
+func (r *mutationResolver) CreateAdviser(ctx context.Context, input *model.NewAdviser) (*int, error) {
+	if input.ID == 0 {
+		return nil, nil
+	}
+	err := r.USRDB.Table("users").Where("id=?", input.ID).Updates(map[string]interface{}{"name": input.Name, "introduction": input.Introduction, "adviser_name": input.AdviserName, "is_adviser": true}).Error
+	if err != nil{
+		return nil, nil
+	}
+	var result = 1
+	return &result, nil
+}
+
 func (r *mutationResolver) CreateGroup(ctx context.Context, input *model.NewGroup) (*int, error) {
 	// グループ作成
 	var group = model.Group{Author: input.UserID, Name: input.GroupName}
