@@ -2,6 +2,14 @@
 
 package model
 
+// アドバイザ一覧用入力
+type AdviserListFilter struct {
+	// first
+	First int `json:"first"`
+	// last
+	Last int `json:"last"`
+}
+
 // カテゴリ
 type Category struct {
 	// id
@@ -129,6 +137,8 @@ type LoginInfo struct {
 	Email string `json:"email"`
 	// パスワード
 	Password string `json:"password"`
+	// FCMトークン
+	Token string `json:"token"`
 }
 
 // アドバイザ作成用入力
@@ -277,6 +287,12 @@ type User struct {
 	Nickname string `json:"nickname"`
 	// メールアドレス
 	Email string `json:"email"`
+	// アドバイザネーム
+	AdviserName *string `json:"adviser_name"`
+	// 説明文
+	Introduction *string `json:"introduction"`
+	// トークン
+	Token string `json:"token"`
 }
 
 // ユーザ認証情報

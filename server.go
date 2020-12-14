@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/hoashi-akane/moneygement-graphql/graph"
 	"github.com/hoashi-akane/moneygement-graphql/graph/generated"
 )
@@ -49,6 +49,18 @@ func main() {
 	savingDb.LogMode(true)
 	usrDb.LogMode(true)
 	baseDb.LogMode(true)
+
+	//opt := option.WithCredentialsFile("./moneygement-b0bff-firebase-adminsdk-zddus-3b4e07930b.json")
+	//app, err := firebase.NewApp(context.Background(), nil, opt)
+	//if err != nil {
+	//	fmt.Errorf("error initializing app: %v", err)
+	//}
+	//
+	////ctx := context.Background()
+	//client, err := app.Messaging(ctx)
+	//registrationToken := []string{
+	//
+	//}
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{SAVDB: savingDb, USRDB: usrDb, BASEDB: baseDb}}))
 

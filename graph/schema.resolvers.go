@@ -79,7 +79,7 @@ func (r *mutationResolver) CreateAdviser(ctx context.Context, input *model.NewAd
 		return nil, nil
 	}
 	err := r.USRDB.Table("users").Where("id=?", input.ID).Updates(map[string]interface{}{"name": input.Name, "introduction": input.Introduction, "adviser_name": input.AdviserName, "is_adviser": true}).Error
-	if err != nil{
+	if err != nil {
 		return nil, nil
 	}
 	var result = 1
@@ -175,8 +175,18 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, groupID int) (*int, 
 
 func (r *queryResolver) Login(ctx context.Context, input model.LoginInfo) (*model.User, error) {
 	var user model.User
-	r.USRDB.Table("users").Select("*").Joins("left join user_auth on users.id = user_auth.user_id").Find(&user, "email = ? and user_auth.password = ?", input.Email, input.Password)
+	r.USRDB.Table("users").Select("users.id, users.nickname, users.email, user_auth.token").Joins("left join user_auth on users.id = user_auth.user_id").Find(&user, "email = ? and user_auth.password = ?", input.Email, input.Password)
+
+	if &user.ID != nil && user.Token != input.Token {
+		r.USRDB.Table("user_auth").Where("user_id=? AND password=?", user.ID, input.Password).Update("token", input.Token)
+	}
 	return &user, nil
+}
+
+func (r *queryResolver) AdviserList(ctx context.Context, input model.AdviserListFilter) ([]*model.User, error) {
+	var userList []*model.User
+	r.USRDB.Table("users").Select("id, adviser_name, introduction").Find(&userList, "is_adviser=true").Offset(input.First).Limit(input.Last)
+	return userList, nil
 }
 
 func (r *queryResolver) ChatList(ctx context.Context, input model.ChatFilter) ([]*model.Chat, error) {

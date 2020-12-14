@@ -14,6 +14,12 @@ type User {
   nickname: String!
   "メールアドレス"
   email: String!
+  "アドバイザネーム"
+  adviser_name: String
+  "説明文"
+  introduction: String
+  "トークン"
+  token: String!
 }
 
 """ユーザ認証情報"""
@@ -30,6 +36,8 @@ input LoginInfo {
     email:String!
     "パスワード"
     password: String!
+    "FCMトークン"
+    token: String!
 }
 
 """ユーザ作成用入力"""
@@ -54,6 +62,14 @@ input NewAdviser{
     introduction: String!
     "アドバイザ名"
     adviserName: String!
+}
+
+"""アドバイザ一覧用入力"""
+input AdviserListFilter{
+    "first"
+    first: Int!
+    "last"
+    last: Int!
 }
 
 """グループ"""
@@ -303,6 +319,8 @@ input NewSavingDetail{
 type Query {
   """ログイン用クエリ"""
   login(input: LoginInfo!): User!
+  """アドバイザ一覧"""
+  adviserList(input: AdviserListFilter!): [User!]!
   """チャット一覧"""
   chatList(input: ChatFilter!): [Chat!]!
   """貯金関連クエリ"""
