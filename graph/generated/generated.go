@@ -121,6 +121,8 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		AddGroupUser        func(childComplexity int, input *model.NewGroupUser) int
+		AddUseAdviser       func(childComplexity int, input *model.AddAdviser) int
 		CreateAdviser       func(childComplexity int, input *model.NewAdviser) int
 		CreateChat          func(childComplexity int, input *model.NewChat) int
 		CreateExpenseDetail func(childComplexity int, input *model.NewExpenseDetail) int
@@ -130,6 +132,8 @@ type ComplexityRoot struct {
 		CreateSavingDetail  func(childComplexity int, input *model.NewSavingDetail) int
 		CreateUser          func(childComplexity int, input *model.NewUser) int
 		DeleteGroup         func(childComplexity int, groupID int) int
+		DeleteLedger        func(childComplexity int, input *model.DeleteLedger) int
+		UpdateUser          func(childComplexity int, input *model.UpdateUser) int
 	}
 
 	Query struct {
@@ -199,13 +203,17 @@ type LedgerEtcResolver interface {
 }
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error)
+	UpdateUser(ctx context.Context, input *model.UpdateUser) (*model.User, error)
 	CreateAdviser(ctx context.Context, input *model.NewAdviser) (*int, error)
+	AddGroupUser(ctx context.Context, input *model.NewGroupUser) (*int, error)
+	AddUseAdviser(ctx context.Context, input *model.AddAdviser) (*int, error)
 	CreateGroup(ctx context.Context, input *model.NewGroup) (*int, error)
 	CreateChat(ctx context.Context, input *model.NewChat) (*int, error)
 	CreateSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error)
 	CreateIncomeDetail(ctx context.Context, input *model.NewIncomeDetail) (*int, error)
 	CreateExpenseDetail(ctx context.Context, input *model.NewExpenseDetail) (*int, error)
 	CreateLedger(ctx context.Context, input *model.NewLedger) (*int, error)
+	DeleteLedger(ctx context.Context, input *model.DeleteLedger) (*int, error)
 	DeleteGroup(ctx context.Context, groupID int) (*int, error)
 }
 type QueryResolver interface {
@@ -567,6 +575,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.LedgerEtc.ShareLedgers(childComplexity, args["userId"].(int)), true
 
+	case "Mutation.addGroupUser":
+		if e.complexity.Mutation.AddGroupUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addGroupUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddGroupUser(childComplexity, args["input"].(*model.NewGroupUser)), true
+
+	case "Mutation.addUseAdviser":
+		if e.complexity.Mutation.AddUseAdviser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addUseAdviser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddUseAdviser(childComplexity, args["input"].(*model.AddAdviser)), true
+
 	case "Mutation.createAdviser":
 		if e.complexity.Mutation.CreateAdviser == nil {
 			break
@@ -674,6 +706,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteGroup(childComplexity, args["groupId"].(int)), true
+
+	case "Mutation.deleteLedger":
+		if e.complexity.Mutation.DeleteLedger == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteLedger_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteLedger(childComplexity, args["input"].(*model.DeleteLedger)), true
+
+	case "Mutation.updateUser":
+		if e.complexity.Mutation.UpdateUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(*model.UpdateUser)), true
 
 	case "Query.adviserList":
 		if e.complexity.Query.AdviserList == nil {
@@ -994,6 +1050,24 @@ type User {
   token: String!
 }
 
+"""ユーザ更新"""
+input UpdateUser{
+  "ユーザID"
+  id: Int!
+  "本名"
+  name: String!
+  "別称"
+  nickname: String!
+  "メールアドレス"
+  email: String!
+  "アドバイザネーム"
+  adviserName: String
+  "説明文"
+  introduction: String
+  "目標貯金額"
+  targetAmount: Int!
+}
+
 """ユーザ認証情報"""
 type UserAuth{
     "ユーザID"
@@ -1047,6 +1121,16 @@ input UseAdviserMemberFilter{
     last: Int!
 }
 
+"""グループ追加用入力"""
+input NewGroupUser{
+    "groupId"
+    groupId: Int!
+    "e-mail"
+    email:String!
+    "ニックネーム"
+    nickName: String!
+}
+
 
 """アドバイザから見た会員リスト用"""
 type AdviserMember{
@@ -1066,6 +1150,16 @@ input AdviserListFilter{
     first: Int!
     "last"
     last: Int!
+}
+
+"""ユーザ側アドバイザ利用登録"""
+input AddAdviser{
+    "userId"
+    userId: Int!
+    "家計簿ID"
+    ledgerId: Int!
+    "アドバイザID"
+    adviserId: Int!
 }
 
 """グループ"""
@@ -1268,6 +1362,14 @@ input NewLedger{
     name: String!
 }
 
+"""家計簿削除用"""
+input DeleteLedger{
+    "家計簿ID"
+    id: Int!
+    "ユーザID"
+    userId: Int!
+}
+
 """家計簿の収入詳細の入力"""
 input NewIncomeDetail{
     "家計簿ID"
@@ -1330,8 +1432,14 @@ type Query {
 type Mutation {
   "ユーザ登録"
   createUser(input: NewUser): User
+  "ユーザ情報更新"
+  updateUser(input: UpdateUser): User
   "アドバイザ登録"
   createAdviser(input: NewAdviser): Int
+  "グループ追加"
+  addGroupUser(input: NewGroupUser): Int
+  "ユーザ側アドバイザ利用"
+  addUseAdviser(input: AddAdviser): Int
   "グループ作成"
   createGroup(input: NewGroup): Int
   "チャット登録"
@@ -1344,6 +1452,8 @@ type Mutation {
   createExpenseDetail(input: NewExpenseDetail): Int
   "家計簿作成"
   createLedger(input: NewLedger): Int
+  "家計簿削除"
+  deleteLedger(input: DeleteLedger): Int
   "グループ削除"
   deleteGroup(groupId: Int!): Int
 }`, BuiltIn: false},
@@ -1396,6 +1506,36 @@ func (ec *executionContext) field_LedgerEtc_shareLedgers_args(ctx context.Contex
 		}
 	}
 	args["userId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addGroupUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.NewGroupUser
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalONewGroupUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐNewGroupUser(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_addUseAdviser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.AddAdviser
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOAddAdviser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐAddAdviser(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1531,6 +1671,36 @@ func (ec *executionContext) field_Mutation_deleteGroup_args(ctx context.Context,
 		}
 	}
 	args["groupId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteLedger_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.DeleteLedger
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalODeleteLedger2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐDeleteLedger(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.UpdateUser
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOUpdateUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUpdateUser(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -3327,6 +3497,45 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	return ec.marshalOUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUser(rctx, args["input"].(*model.UpdateUser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createAdviser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3353,6 +3562,84 @@ func (ec *executionContext) _Mutation_createAdviser(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreateAdviser(rctx, args["input"].(*model.NewAdviser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addGroupUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addGroupUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddGroupUser(rctx, args["input"].(*model.NewGroupUser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_addUseAdviser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addUseAdviser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddUseAdviser(rctx, args["input"].(*model.AddAdviser))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3587,6 +3874,45 @@ func (ec *executionContext) _Mutation_createLedger(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreateLedger(rctx, args["input"].(*model.NewLedger))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteLedger(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteLedger_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteLedger(rctx, args["input"].(*model.DeleteLedger))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5820,6 +6146,42 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAddAdviser(ctx context.Context, obj interface{}) (model.AddAdviser, error) {
+	var it model.AddAdviser
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			it.UserID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ledgerId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ledgerId"))
+			it.LedgerID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "adviserId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("adviserId"))
+			it.AdviserID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputAdviserListFilter(ctx context.Context, obj interface{}) (model.AdviserListFilter, error) {
 	var it model.AdviserListFilter
 	var asMap = obj.(map[string]interface{})
@@ -5875,6 +6237,34 @@ func (ec *executionContext) unmarshalInputChatFilter(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
 			it.Last, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDeleteLedger(ctx context.Context, obj interface{}) (model.DeleteLedger, error) {
+	var it model.DeleteLedger
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "userId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			it.UserID, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6088,6 +6478,42 @@ func (ec *executionContext) unmarshalInputNewGroup(ctx context.Context, obj inte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewGroupUser(ctx context.Context, obj interface{}) (model.NewGroupUser, error) {
+	var it model.NewGroupUser
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "groupId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("groupId"))
+			it.GroupID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "email":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nickName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nickName"))
+			it.NickName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewIncomeDetail(ctx context.Context, obj interface{}) (model.NewIncomeDetail, error) {
 	var it model.NewIncomeDetail
 	var asMap = obj.(map[string]interface{})
@@ -6267,6 +6693,74 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
 			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj interface{}) (model.UpdateUser, error) {
+	var it model.UpdateUser
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "nickname":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nickname"))
+			it.Nickname, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "email":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "adviserName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("adviserName"))
+			it.AdviserName, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "introduction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("introduction"))
+			it.Introduction, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "targetAmount":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("targetAmount"))
+			it.TargetAmount, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6859,8 +7353,14 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = graphql.MarshalString("Mutation")
 		case "createUser":
 			out.Values[i] = ec._Mutation_createUser(ctx, field)
+		case "updateUser":
+			out.Values[i] = ec._Mutation_updateUser(ctx, field)
 		case "createAdviser":
 			out.Values[i] = ec._Mutation_createAdviser(ctx, field)
+		case "addGroupUser":
+			out.Values[i] = ec._Mutation_addGroupUser(ctx, field)
+		case "addUseAdviser":
+			out.Values[i] = ec._Mutation_addUseAdviser(ctx, field)
 		case "createGroup":
 			out.Values[i] = ec._Mutation_createGroup(ctx, field)
 		case "createChat":
@@ -6873,6 +7373,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_createExpenseDetail(ctx, field)
 		case "createLedger":
 			out.Values[i] = ec._Mutation_createLedger(ctx, field)
+		case "deleteLedger":
+			out.Values[i] = ec._Mutation_deleteLedger(ctx, field)
 		case "deleteGroup":
 			out.Values[i] = ec._Mutation_deleteGroup(ctx, field)
 		default:
@@ -8271,6 +8773,14 @@ func (ec *executionContext) unmarshalNsavingsDetailsFilter2githubᚗcomᚋhoashi
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOAddAdviser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐAddAdviser(ctx context.Context, v interface{}) (*model.AddAdviser, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputAddAdviser(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOAdviserMember2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐAdviserMember(ctx context.Context, sel ast.SelectionSet, v *model.AdviserMember) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -8300,6 +8810,14 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) unmarshalODeleteLedger2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐDeleteLedger(ctx context.Context, v interface{}) (*model.DeleteLedger, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDeleteLedger(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
@@ -8346,6 +8864,14 @@ func (ec *executionContext) unmarshalONewGroup2ᚖgithubᚗcomᚋhoashiᚑakane�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputNewGroup(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalONewGroupUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐNewGroupUser(ctx context.Context, v interface{}) (*model.NewGroupUser, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNewGroupUser(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -8403,6 +8929,14 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) unmarshalOUpdateUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUpdateUser(ctx context.Context, v interface{}) (*model.UpdateUser, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUpdateUser(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {

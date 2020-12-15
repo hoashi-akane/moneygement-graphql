@@ -74,6 +74,26 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser)
 	return &user, nil
 }
 
+func (r *mutationResolver) UpdateUser(ctx context.Context, input *model.UpdateUser) (*model.User, error) {
+	var user model.User
+	if input == nil || input.ID == 0 {
+		return nil, nil
+	}
+	// ユーザテーブル更新
+	err := r.USRDB.Table("users").Where("id = ?", input.ID).Updates(map[string]interface{}{"name": input.Name, "nickname": input.Nickname, "email": input.Email, "introduction": input.Introduction, "adviser_name": input.AdviserName}).Error
+	if err != nil {
+		return nil, nil
+	}
+	// 貯金テーブル更新 ( 目標貯金額
+	err = r.SAVDB.Table("savings").Where("userid=?", input.ID).Update("target_amount", input.TargetAmount).Error
+	if err != nil {
+		return nil, nil
+	}
+	// ユーザ情報取得
+	r.USRDB.Table("users").Where("id=?", input.ID).Find(&user)
+	return &user, nil
+}
+
 func (r *mutationResolver) CreateAdviser(ctx context.Context, input *model.NewAdviser) (*int, error) {
 	if input.ID == 0 {
 		return nil, nil
@@ -84,6 +104,30 @@ func (r *mutationResolver) CreateAdviser(ctx context.Context, input *model.NewAd
 	}
 	var result = 1
 	return &result, nil
+}
+
+func (r *mutationResolver) AddGroupUser(ctx context.Context, input *model.NewGroupUser) (*int, error) {
+	var user model.User
+	r.USRDB.Table("users").Select("id").Find(&user, "email=? AND nickname=?", input.Email, input.NickName)
+	if user.ID == 0 {
+		return nil, nil
+	}
+	var enrollment = model.Enrollment{UserID: user.ID, GroupID: input.GroupID}
+	r.USRDB.Table("enrollment").Create(&enrollment)
+	var i = 1
+	return &i, nil
+}
+
+func (r *mutationResolver) AddUseAdviser(ctx context.Context, input *model.AddAdviser) (*int, error) {
+	if input == nil || input.AdviserID == 0 || input.LedgerID == 0 || input.UserID == 0 {
+		return nil, nil
+	}
+	err := r.BASEDB.Table("ledger").Where("id=? AND user_id=?", input.LedgerID, input.UserID).Updates(map[string]interface{}{"adviser_id": input.AdviserID}).Error
+	if err != nil {
+		return nil, nil
+	}
+	var i = 1
+	return &i, nil
 }
 
 func (r *mutationResolver) CreateGroup(ctx context.Context, input *model.NewGroup) (*int, error) {
@@ -151,6 +195,19 @@ func (r *mutationResolver) CreateLedger(ctx context.Context, input *model.NewLed
 	return nil, nil
 }
 
+func (r *mutationResolver) DeleteLedger(ctx context.Context, input *model.DeleteLedger) (*int, error) {
+	if input == nil || input.ID == 0{
+		return nil, nil
+	}
+	var ledger = model.Ledger{ID: input.ID}
+	err := r.BASEDB.Table("ledger").Where("user_id=? AND group_id=0", input.UserID).Delete(&ledger).Error
+	if err != nil{
+		return nil, nil
+	}
+	var i = 1
+	return &i, nil
+}
+
 func (r *mutationResolver) DeleteGroup(ctx context.Context, groupID int) (*int, error) {
 	//	グループ削除、　一緒に家計簿も削除する必要がある
 	//	0またはnilだと全カラム削除されてしまうので注意
@@ -195,12 +252,12 @@ func (r *queryResolver) UseAdviserMemberList(ctx context.Context, input model.Us
 	var ledgerList []*model.Ledger
 	var userIdList []int
 	r.BASEDB.Table("ledger").Select("id, user_id, name").Find(&ledgerList, "adviser_id = ?", input.UserID)
-	for _, adviser := range ledgerList{
-		if userIdList == nil{
+	for _, adviser := range ledgerList {
+		if userIdList == nil {
 			userIdList = append(userIdList, adviser.UserID)
-		}else{
-			for _, v := range userIdList{
-				if adviser.UserID != v{
+		} else {
+			for _, v := range userIdList {
+				if adviser.UserID != v {
 					userIdList = append(userIdList, v)
 				}
 			}
@@ -208,9 +265,9 @@ func (r *queryResolver) UseAdviserMemberList(ctx context.Context, input model.Us
 	}
 
 	r.USRDB.Table("users").Find(&userList, "id IN (?)", userIdList)
-	for _, ledger := range ledgerList{
+	for _, ledger := range ledgerList {
 		for _, user := range userList {
-			if ledger.UserID == user.ID{
+			if ledger.UserID == user.ID {
 				var adviser = model.AdviserMember{ID: ledger.ID, UserID: user.ID, NickName: user.Nickname, LedgerName: ledger.Name}
 				adviserList = append(adviserList, &adviser)
 			}

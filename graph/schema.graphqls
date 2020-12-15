@@ -22,6 +22,24 @@ type User {
   token: String!
 }
 
+"""ユーザ更新"""
+input UpdateUser{
+  "ユーザID"
+  id: Int!
+  "本名"
+  name: String!
+  "別称"
+  nickname: String!
+  "メールアドレス"
+  email: String!
+  "アドバイザネーム"
+  adviserName: String
+  "説明文"
+  introduction: String
+  "目標貯金額"
+  targetAmount: Int!
+}
+
 """ユーザ認証情報"""
 type UserAuth{
     "ユーザID"
@@ -73,6 +91,16 @@ input UseAdviserMemberFilter{
     first: Int!
     "last"
     last: Int!
+}
+
+"""グループ追加用入力"""
+input NewGroupUser{
+    "groupId"
+    groupId: Int!
+    "e-mail"
+    email:String!
+    "ニックネーム"
+    nickName: String!
 }
 
 
@@ -306,6 +334,14 @@ input NewLedger{
     name: String!
 }
 
+"""家計簿削除用"""
+input DeleteLedger{
+    "家計簿ID"
+    id: Int!
+    "ユーザID"
+    userId: Int!
+}
+
 """家計簿の収入詳細の入力"""
 input NewIncomeDetail{
     "家計簿ID"
@@ -368,8 +404,12 @@ type Query {
 type Mutation {
   "ユーザ登録"
   createUser(input: NewUser): User
+  "ユーザ情報更新"
+  updateUser(input: UpdateUser): User
   "アドバイザ登録"
   createAdviser(input: NewAdviser): Int
+  "グループ追加"
+  addGroupUser(input: NewGroupUser): Int
   "ユーザ側アドバイザ利用"
   addUseAdviser(input: AddAdviser): Int
   "グループ作成"
@@ -384,6 +424,8 @@ type Mutation {
   createExpenseDetail(input: NewExpenseDetail): Int
   "家計簿作成"
   createLedger(input: NewLedger): Int
+  "家計簿削除"
+  deleteLedger(input: DeleteLedger): Int
   "グループ削除"
   deleteGroup(groupId: Int!): Int
 }
