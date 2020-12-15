@@ -64,12 +64,46 @@ input NewAdviser{
     adviserName: String!
 }
 
+
+"""アドバイザから見た会員リスト用入力"""
+input UseAdviserMemberFilter{
+    "id"
+    userId: Int!
+    "first"
+    first: Int!
+    "last"
+    last: Int!
+}
+
+
+"""アドバイザから見た会員リスト用"""
+type AdviserMember{
+    "家計簿id"
+    id: Int!
+    "ユーザID"
+    userId: Int!
+    "ニックネーム"
+    nickName: String!
+    "家計簿名"
+    ledgerName: String!
+}
+
 """アドバイザ一覧用入力"""
 input AdviserListFilter{
     "first"
     first: Int!
     "last"
     last: Int!
+}
+
+"""ユーザ側アドバイザ利用登録"""
+input AddAdviser{
+    "userId"
+    userId: Int!
+    "家計簿ID"
+    ledgerId: Int!
+    "アドバイザID"
+    adviserId: Int!
 }
 
 """グループ"""
@@ -321,6 +355,8 @@ type Query {
   login(input: LoginInfo!): User!
   """アドバイザ一覧"""
   adviserList(input: AdviserListFilter!): [User!]!
+  """アドバイザから見た会員リスト"""
+  useAdviserMemberList(input: UseAdviserMemberFilter!): [AdviserMember]!
   """チャット一覧"""
   chatList(input: ChatFilter!): [Chat!]!
   """貯金関連クエリ"""
@@ -334,6 +370,8 @@ type Mutation {
   createUser(input: NewUser): User
   "アドバイザ登録"
   createAdviser(input: NewAdviser): Int
+  "ユーザ側アドバイザ利用"
+  addUseAdviser(input: AddAdviser): Int
   "グループ作成"
   createGroup(input: NewGroup): Int
   "チャット登録"

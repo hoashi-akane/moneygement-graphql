@@ -185,13 +185,44 @@ func (r *queryResolver) Login(ctx context.Context, input model.LoginInfo) (*mode
 
 func (r *queryResolver) AdviserList(ctx context.Context, input model.AdviserListFilter) ([]*model.User, error) {
 	var userList []*model.User
-	r.USRDB.Table("users").Select("id, adviser_name, introduction").Find(&userList, "is_adviser=true").Offset(input.First).Limit(input.Last)
+	r.USRDB.Table("users").Select("id, adviser_name, introduction").Offset(input.First).Limit(input.Last).Find(&userList, "is_adviser=true")
 	return userList, nil
+}
+
+func (r *queryResolver) UseAdviserMemberList(ctx context.Context, input model.UseAdviserMemberFilter) ([]*model.AdviserMember, error) {
+	var adviserList []*model.AdviserMember
+	var userList []*model.User
+	var ledgerList []*model.Ledger
+	var userIdList []int
+	r.BASEDB.Table("ledger").Select("id, user_id, name").Find(&ledgerList, "adviser_id = ?", input.UserID)
+	for _, adviser := range ledgerList{
+		if userIdList == nil{
+			userIdList = append(userIdList, adviser.UserID)
+		}else{
+			for _, v := range userIdList{
+				if adviser.UserID != v{
+					userIdList = append(userIdList, v)
+				}
+			}
+		}
+	}
+
+	r.USRDB.Table("users").Find(&userList, "id IN (?)", userIdList)
+	for _, ledger := range ledgerList{
+		for _, user := range userList {
+			if ledger.UserID == user.ID{
+				var adviser = model.AdviserMember{ID: ledger.ID, UserID: user.ID, NickName: user.Nickname, LedgerName: ledger.Name}
+				adviserList = append(adviserList, &adviser)
+			}
+		}
+	}
+
+	return adviserList, nil
 }
 
 func (r *queryResolver) ChatList(ctx context.Context, input model.ChatFilter) ([]*model.Chat, error) {
 	var chatList []*model.Chat
-	r.USRDB.Order("created_at desc").Table("chat").Select("chat.id, chat.ledger_id, chat.user_id, chat.comment, chat.created_at, users.nickname").Joins("left join users on chat.user_id = users.id").Find(&chatList, "ledger_id = ?", input.LedgerID).Offset(input.First).Limit(input.Last)
+	r.USRDB.Order("created_at desc").Table("chat").Select("chat.id, chat.ledger_id, chat.user_id, chat.comment, chat.created_at, users.nickname").Joins("left join users on chat.user_id = users.id").Offset(input.First).Limit(input.Last).Find(&chatList, "ledger_id = ?", input.LedgerID)
 	return chatList, nil
 }
 

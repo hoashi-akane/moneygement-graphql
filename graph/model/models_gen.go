@@ -10,6 +10,18 @@ type AdviserListFilter struct {
 	Last int `json:"last"`
 }
 
+// アドバイザから見た会員リスト用
+type AdviserMember struct {
+	// 家計簿id
+	ID int `json:"id"`
+	// ユーザID
+	UserID int `json:"userId"`
+	// ニックネーム
+	NickName string `json:"nickName"`
+	// 家計簿名
+	LedgerName string `json:"ledgerName"`
+}
+
 // カテゴリ
 type Category struct {
 	// id
@@ -275,6 +287,16 @@ type SavingsDetail struct {
 	SavingDate string `json:"saving_date"`
 	// メモ
 	Note string `json:"note"`
+}
+
+// アドバイザから見た会員リスト用入力
+type UseAdviserMemberFilter struct {
+	// id
+	UserID int `json:"userId"`
+	// first
+	First int `json:"first"`
+	// last
+	Last int `json:"last"`
 }
 
 // ユーザ関連

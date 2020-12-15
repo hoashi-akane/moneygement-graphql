@@ -48,6 +48,13 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AdviserMember struct {
+		ID         func(childComplexity int) int
+		LedgerName func(childComplexity int) int
+		NickName   func(childComplexity int) int
+		UserID     func(childComplexity int) int
+	}
+
 	Category struct {
 		CreatedAt func(childComplexity int) int
 		ID        func(childComplexity int) int
@@ -126,11 +133,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AdviserList func(childComplexity int, input model.AdviserListFilter) int
-		ChatList    func(childComplexity int, input model.ChatFilter) int
-		Ledger      func(childComplexity int) int
-		Login       func(childComplexity int, input model.LoginInfo) int
-		Saving      func(childComplexity int) int
+		AdviserList          func(childComplexity int, input model.AdviserListFilter) int
+		ChatList             func(childComplexity int, input model.ChatFilter) int
+		Ledger               func(childComplexity int) int
+		Login                func(childComplexity int, input model.LoginInfo) int
+		Saving               func(childComplexity int) int
+		UseAdviserMemberList func(childComplexity int, input model.UseAdviserMemberFilter) int
 	}
 
 	Saving struct {
@@ -203,6 +211,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Login(ctx context.Context, input model.LoginInfo) (*model.User, error)
 	AdviserList(ctx context.Context, input model.AdviserListFilter) ([]*model.User, error)
+	UseAdviserMemberList(ctx context.Context, input model.UseAdviserMemberFilter) ([]*model.AdviserMember, error)
 	ChatList(ctx context.Context, input model.ChatFilter) ([]*model.Chat, error)
 	Saving(ctx context.Context) (*model.Saving, error)
 	Ledger(ctx context.Context) (*model.LedgerEtc, error)
@@ -227,6 +236,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AdviserMember.id":
+		if e.complexity.AdviserMember.ID == nil {
+			break
+		}
+
+		return e.complexity.AdviserMember.ID(childComplexity), true
+
+	case "AdviserMember.ledgerName":
+		if e.complexity.AdviserMember.LedgerName == nil {
+			break
+		}
+
+		return e.complexity.AdviserMember.LedgerName(childComplexity), true
+
+	case "AdviserMember.nickName":
+		if e.complexity.AdviserMember.NickName == nil {
+			break
+		}
+
+		return e.complexity.AdviserMember.NickName(childComplexity), true
+
+	case "AdviserMember.userId":
+		if e.complexity.AdviserMember.UserID == nil {
+			break
+		}
+
+		return e.complexity.AdviserMember.UserID(childComplexity), true
 
 	case "Category.created_at":
 		if e.complexity.Category.CreatedAt == nil {
@@ -688,6 +725,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Saving(childComplexity), true
 
+	case "Query.useAdviserMemberList":
+		if e.complexity.Query.UseAdviserMemberList == nil {
+			break
+		}
+
+		args, err := ec.field_Query_useAdviserMemberList_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.UseAdviserMemberList(childComplexity, args["input"].(model.UseAdviserMemberFilter)), true
+
 	case "Saving.savingAmount":
 		if e.complexity.Saving.SavingAmount == nil {
 			break
@@ -987,6 +1036,30 @@ input NewAdviser{
     adviserName: String!
 }
 
+
+"""アドバイザから見た会員リスト用入力"""
+input UseAdviserMemberFilter{
+    "id"
+    userId: Int!
+    "first"
+    first: Int!
+    "last"
+    last: Int!
+}
+
+
+"""アドバイザから見た会員リスト用"""
+type AdviserMember{
+    "家計簿id"
+    id: Int!
+    "ユーザID"
+    userId: Int!
+    "ニックネーム"
+    nickName: String!
+    "家計簿名"
+    ledgerName: String!
+}
+
 """アドバイザ一覧用入力"""
 input AdviserListFilter{
     "first"
@@ -1244,6 +1317,8 @@ type Query {
   login(input: LoginInfo!): User!
   """アドバイザ一覧"""
   adviserList(input: AdviserListFilter!): [User!]!
+  """アドバイザから見た会員リスト"""
+  useAdviserMemberList(input: UseAdviserMemberFilter!): [AdviserMember]!
   """チャット一覧"""
   chatList(input: ChatFilter!): [Chat!]!
   """貯金関連クエリ"""
@@ -1519,6 +1594,21 @@ func (ec *executionContext) field_Query_login_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_useAdviserMemberList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UseAdviserMemberFilter
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUseAdviserMemberFilter2githubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUseAdviserMemberFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Saving_savingAmount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1601,6 +1691,146 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AdviserMember_id(ctx context.Context, field graphql.CollectedField, obj *model.AdviserMember) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdviserMember",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdviserMember_userId(ctx context.Context, field graphql.CollectedField, obj *model.AdviserMember) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdviserMember",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UserID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdviserMember_nickName(ctx context.Context, field graphql.CollectedField, obj *model.AdviserMember) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdviserMember",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NickName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AdviserMember_ledgerName(ctx context.Context, field graphql.CollectedField, obj *model.AdviserMember) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AdviserMember",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LedgerName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Category_Id(ctx context.Context, field graphql.CollectedField, obj *model.Category) (ret graphql.Marshaler) {
 	defer func() {
@@ -3491,6 +3721,48 @@ func (ec *executionContext) _Query_adviserList(ctx context.Context, field graphq
 	res := resTmp.([]*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_useAdviserMemberList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_useAdviserMemberList_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().UseAdviserMemberList(rctx, args["input"].(model.UseAdviserMemberFilter))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.AdviserMember)
+	fc.Result = res
+	return ec.marshalNAdviserMember2ᚕᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐAdviserMember(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_chatList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6004,6 +6276,42 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUseAdviserMemberFilter(ctx context.Context, obj interface{}) (model.UseAdviserMemberFilter, error) {
+	var it model.UseAdviserMemberFilter
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "userId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			it.UserID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "first":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+			it.First, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "last":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+			it.Last, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputsavingsDetailsFilter(ctx context.Context, obj interface{}) (model.SavingsDetailsFilter, error) {
 	var it model.SavingsDetailsFilter
 	var asMap = obj.(map[string]interface{})
@@ -6047,6 +6355,48 @@ func (ec *executionContext) unmarshalInputsavingsDetailsFilter(ctx context.Conte
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var adviserMemberImplementors = []string{"AdviserMember"}
+
+func (ec *executionContext) _AdviserMember(ctx context.Context, sel ast.SelectionSet, obj *model.AdviserMember) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, adviserMemberImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AdviserMember")
+		case "id":
+			out.Values[i] = ec._AdviserMember_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "userId":
+			out.Values[i] = ec._AdviserMember_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "nickName":
+			out.Values[i] = ec._AdviserMember_nickName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ledgerName":
+			out.Values[i] = ec._AdviserMember_ledgerName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var categoryImplementors = []string{"Category"}
 
@@ -6574,6 +6924,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_adviserList(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "useAdviserMemberList":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_useAdviserMemberList(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -7149,6 +7513,43 @@ func (ec *executionContext) unmarshalNAdviserListFilter2githubᚗcomᚋhoashiᚑ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNAdviserMember2ᚕᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐAdviserMember(ctx context.Context, sel ast.SelectionSet, v []*model.AdviserMember) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOAdviserMember2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐAdviserMember(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7580,6 +7981,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNUseAdviserMemberFilter2githubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUseAdviserMemberFilter(ctx context.Context, v interface{}) (model.UseAdviserMemberFilter, error) {
+	res, err := ec.unmarshalInputUseAdviserMemberFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNUser2githubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
@@ -7863,6 +8269,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 func (ec *executionContext) unmarshalNsavingsDetailsFilter2githubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐSavingsDetailsFilter(ctx context.Context, v interface{}) (model.SavingsDetailsFilter, error) {
 	res, err := ec.unmarshalInputsavingsDetailsFilter(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAdviserMember2ᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐAdviserMember(ctx context.Context, sel ast.SelectionSet, v *model.AdviserMember) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AdviserMember(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
