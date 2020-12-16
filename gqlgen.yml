@@ -72,6 +72,8 @@ models:
         resolver: true
       shareLedgers:
         resolver: true
+      adviserLedgers:
+        resolver: true
 
   Ledger:
     fields:

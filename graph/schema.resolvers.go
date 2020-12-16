@@ -56,6 +56,11 @@ func (r *ledgerEtcResolver) ShareLedgers(ctx context.Context, obj *model.LedgerE
 	return obj.Ledgers, nil
 }
 
+func (r *ledgerEtcResolver) AdviserLedgers(ctx context.Context, obj *model.LedgerEtc, adviserID int) ([]*model.Ledger, error) {
+	r.BASEDB.Table("ledger").Find(&obj.Ledgers, "adviser_id=?", adviserID)
+	return obj.Ledgers, nil
+}
+
 func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error) {
 	var user = model.User{Nickname: input.NickName, Name: input.Name, Email: input.Email}
 
@@ -196,12 +201,12 @@ func (r *mutationResolver) CreateLedger(ctx context.Context, input *model.NewLed
 }
 
 func (r *mutationResolver) DeleteLedger(ctx context.Context, input *model.DeleteLedger) (*int, error) {
-	if input == nil || input.ID == 0{
+	if input == nil || input.ID == 0 {
 		return nil, nil
 	}
 	var ledger = model.Ledger{ID: input.ID}
 	err := r.BASEDB.Table("ledger").Where("user_id=? AND group_id=0", input.UserID).Delete(&ledger).Error
-	if err != nil{
+	if err != nil {
 		return nil, nil
 	}
 	var i = 1
@@ -232,9 +237,9 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, groupID int) (*int, 
 
 func (r *queryResolver) Login(ctx context.Context, input model.LoginInfo) (*model.User, error) {
 	var user model.User
-	r.USRDB.Table("users").Select("users.id, users.nickname, users.email, user_auth.token").Joins("left join user_auth on users.id = user_auth.user_id").Find(&user, "email = ? and user_auth.password = ?", input.Email, input.Password)
+	r.USRDB.Table("users").Select("users.id, users.name, users.nickname, users.email, users.adviser_name, users.introduction, user_auth.token").Joins("left join user_auth on users.id = user_auth.user_id").Find(&user, "email = ? and user_auth.password = ?", input.Email, input.Password)
 
-	if &user.ID != nil && user.Token != input.Token {
+	if &user.ID != nil && user.ID != 0 && user.Token != input.Token {
 		r.USRDB.Table("user_auth").Where("user_id=? AND password=?", user.ID, input.Password).Update("token", input.Token)
 	}
 	return &user, nil

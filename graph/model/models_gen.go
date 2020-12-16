@@ -159,6 +159,8 @@ type LedgerEtc struct {
 	Ledger *Ledger `json:"ledger"`
 	// 共有家計簿リスト取得
 	ShareLedgers []*Ledger `json:"shareLedgers"`
+	// アドバイザ側家計簿リスト
+	AdviserLedgers []*Ledger `json:"adviserLedgers"`
 }
 
 // ログイン用入力

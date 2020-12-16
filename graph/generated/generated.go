@@ -114,10 +114,11 @@ type ComplexityRoot struct {
 	}
 
 	LedgerEtc struct {
-		CategoryList func(childComplexity int) int
-		Ledger       func(childComplexity int, id int) int
-		Ledgers      func(childComplexity int, userID int) int
-		ShareLedgers func(childComplexity int, userID int) int
+		AdviserLedgers func(childComplexity int, adviserID int) int
+		CategoryList   func(childComplexity int) int
+		Ledger         func(childComplexity int, id int) int
+		Ledgers        func(childComplexity int, userID int) int
+		ShareLedgers   func(childComplexity int, userID int) int
 	}
 
 	Mutation struct {
@@ -200,6 +201,7 @@ type LedgerEtcResolver interface {
 	Ledgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error)
 	Ledger(ctx context.Context, obj *model.LedgerEtc, id int) (*model.Ledger, error)
 	ShareLedgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error)
+	AdviserLedgers(ctx context.Context, obj *model.LedgerEtc, adviserID int) ([]*model.Ledger, error)
 }
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error)
@@ -531,6 +533,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Ledger.UserID(childComplexity), true
+
+	case "LedgerEtc.adviserLedgers":
+		if e.complexity.LedgerEtc.AdviserLedgers == nil {
+			break
+		}
+
+		args, err := ec.field_LedgerEtc_adviserLedgers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.LedgerEtc.AdviserLedgers(childComplexity, args["adviserId"].(int)), true
 
 	case "LedgerEtc.categoryList":
 		if e.complexity.LedgerEtc.CategoryList == nil {
@@ -1286,6 +1300,8 @@ type LedgerEtc{
     ledger(id: Int!): Ledger!
     "共有家計簿リスト取得"
     shareLedgers(userId: Int!): [Ledger!]!
+    "アドバイザ側家計簿リスト"
+    adviserLedgers(adviserId: Int!): [Ledger!]!
 }
 
 """家計簿"""
@@ -1463,6 +1479,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_LedgerEtc_adviserLedgers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["adviserId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("adviserId"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["adviserId"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_LedgerEtc_ledger_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -3442,6 +3473,48 @@ func (ec *executionContext) _LedgerEtc_shareLedgers(ctx context.Context, field g
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.LedgerEtc().ShareLedgers(rctx, obj, args["userId"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Ledger)
+	fc.Result = res
+	return ec.marshalNLedger2ᚕᚖgithubᚗcomᚋhoashiᚑakaneᚋmoneygementᚑgraphqlᚋgraphᚋmodelᚐLedgerᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _LedgerEtc_adviserLedgers(ctx context.Context, field graphql.CollectedField, obj *model.LedgerEtc) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "LedgerEtc",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_LedgerEtc_adviserLedgers_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.LedgerEtc().AdviserLedgers(rctx, obj, args["adviserId"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7320,6 +7393,20 @@ func (ec *executionContext) _LedgerEtc(ctx context.Context, sel ast.SelectionSet
 					}
 				}()
 				res = ec._LedgerEtc_shareLedgers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "adviserLedgers":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._LedgerEtc_adviserLedgers(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

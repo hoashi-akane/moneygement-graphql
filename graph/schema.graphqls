@@ -258,6 +258,8 @@ type LedgerEtc{
     ledger(id: Int!): Ledger!
     "共有家計簿リスト取得"
     shareLedgers(userId: Int!): [Ledger!]!
+    "アドバイザ側家計簿リスト"
+    adviserLedgers(adviserId: Int!): [Ledger!]!
 }
 
 """家計簿"""
