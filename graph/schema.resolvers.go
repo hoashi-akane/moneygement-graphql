@@ -313,8 +313,9 @@ func (r *savingResolver) SavingAmount(ctx context.Context, obj *model.Saving, us
 func (r *savingResolver) SavingsDetails(ctx context.Context, obj *model.Saving, input model.SavingsDetailsFilter) ([]*model.SavingsDetail, error) {
 	// 家計簿の利用履歴を取得
 	var results []*model.SavingsDetail
+
 	// offset, limit句の代わりにPKに対してBETWEEN句を利用しカラムを指定。速度が早いっぽい
-	r.SAVDB.Order("saving_date DESC").Find(&results, "saving_id=? AND id BETWEEN ? AND ?", input.SavingsID, input.First, input.Last)
+	r.SAVDB.Table("savings_details sd").Order("saving_date DESC").Joins("RIGHT OUTER JOIN savings s ON sd.saving_id = s.id").Select("sd.id, sd.saving_id, sd.saving_amount, sd.note, sd.saving_date").Offset(input.First).Limit(input.Last).Find(&results, "s.userid=?", input.SavingsID)
 	return results, nil
 }
 
