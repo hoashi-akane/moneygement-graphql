@@ -2,6 +2,36 @@
 
 package model
 
+// ユーザ側アドバイザ利用登録
+type AddAdviser struct {
+	// userId
+	UserID int `json:"userId"`
+	// 家計簿ID
+	LedgerID int `json:"ledgerId"`
+	// アドバイザID
+	AdviserID int `json:"adviserId"`
+}
+
+// アドバイザ一覧用入力
+type AdviserListFilter struct {
+	// first
+	First int `json:"first"`
+	// last
+	Last int `json:"last"`
+}
+
+// アドバイザから見た会員リスト用
+type AdviserMember struct {
+	// 家計簿id
+	ID int `json:"id"`
+	// ユーザID
+	UserID int `json:"userId"`
+	// ニックネーム
+	NickName string `json:"nickName"`
+	// 家計簿名
+	LedgerName string `json:"ledgerName"`
+}
+
 // カテゴリ
 type Category struct {
 	// id
@@ -10,6 +40,37 @@ type Category struct {
 	Name string `json:"Name"`
 	// 作成日
 	CreatedAt string `json:"created_at"`
+}
+
+// チャット
+type Chat struct {
+	// id
+	ID int `json:"id"`
+	// 家計簿ID
+	LedgerID int `json:"ledgerId"`
+	// ユーザID
+	UserID int `json:"userId"`
+	// コメント
+	Comment string `json:"comment"`
+	// 作成日
+	CreatedAt string `json:"createdAt"`
+	// ニックネーム
+	Nickname string `json:"nickname"`
+}
+
+// チャット一覧取得用フィルター
+type ChatFilter struct {
+	LedgerID int `json:"ledgerId"`
+	First    int `json:"first"`
+	Last     int `json:"last"`
+}
+
+// 家計簿削除用
+type DeleteLedger struct {
+	// 家計簿ID
+	ID int `json:"id"`
+	// ユーザID
+	UserID int `json:"userId"`
 }
 
 // ユーザグループ間要素
@@ -98,6 +159,8 @@ type LedgerEtc struct {
 	Ledger *Ledger `json:"ledger"`
 	// 共有家計簿リスト取得
 	ShareLedgers []*Ledger `json:"shareLedgers"`
+	// アドバイザ側家計簿リスト
+	AdviserLedgers []*Ledger `json:"adviserLedgers"`
 }
 
 // ログイン用入力
@@ -106,6 +169,30 @@ type LoginInfo struct {
 	Email string `json:"email"`
 	// パスワード
 	Password string `json:"password"`
+	// FCMトークン
+	Token string `json:"token"`
+}
+
+// アドバイザ作成用入力
+type NewAdviser struct {
+	// id
+	ID int `json:"id"`
+	// 本名
+	Name string `json:"name"`
+	// 説明
+	Introduction string `json:"introduction"`
+	// アドバイザ名
+	AdviserName string `json:"adviserName"`
+}
+
+// チャット作成入力
+type NewChat struct {
+	// 家計簿ID
+	LedgerID int `json:"ledgerId"`
+	// ユーザID
+	UserID int `json:"userId"`
+	// コメント
+	Comment string `json:"comment"`
 }
 
 // 家計簿の支出詳細の入力
@@ -130,6 +217,16 @@ type NewGroup struct {
 	GroupName string `json:"groupName"`
 	// 家計簿名
 	LedgerName string `json:"ledgerName"`
+}
+
+// グループ追加用入力
+type NewGroupUser struct {
+	// groupId
+	GroupID int `json:"groupId"`
+	// e-mail
+	Email string `json:"email"`
+	// ニックネーム
+	NickName string `json:"nickName"`
 }
 
 // 家計簿の収入詳細の入力
@@ -222,6 +319,34 @@ type SavingsDetail struct {
 	Note string `json:"note"`
 }
 
+// ユーザ更新
+type UpdateUser struct {
+	// ユーザID
+	ID int `json:"id"`
+	// 本名
+	Name string `json:"name"`
+	// 別称
+	Nickname string `json:"nickname"`
+	// メールアドレス
+	Email string `json:"email"`
+	// アドバイザネーム
+	AdviserName *string `json:"adviserName"`
+	// 説明文
+	Introduction *string `json:"introduction"`
+	// 目標貯金額
+	TargetAmount int `json:"targetAmount"`
+}
+
+// アドバイザから見た会員リスト用入力
+type UseAdviserMemberFilter struct {
+	// id
+	UserID int `json:"userId"`
+	// first
+	First int `json:"first"`
+	// last
+	Last int `json:"last"`
+}
+
 // ユーザ関連
 type User struct {
 	// ユーザID
@@ -232,6 +357,12 @@ type User struct {
 	Nickname string `json:"nickname"`
 	// メールアドレス
 	Email string `json:"email"`
+	// アドバイザネーム
+	AdviserName *string `json:"adviser_name"`
+	// 説明文
+	Introduction *string `json:"introduction"`
+	// トークン
+	Token string `json:"token"`
 }
 
 // ユーザ認証情報
