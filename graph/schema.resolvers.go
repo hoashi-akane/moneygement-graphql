@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"github.com/hoashi-akane/moneygement-graphql/graph/repository"
 	"log"
 
 	"github.com/hoashi-akane/moneygement-graphql/graph/generated"
@@ -35,7 +36,7 @@ func (r *ledgerResolver) Expenses(ctx context.Context, obj *model.Ledger) ([]*mo
 }
 
 func (r *ledgerEtcResolver) Ledgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
-	r.BASEDB.Table("ledger").Find(&obj.Ledgers, "user_id=?", userID)
+	obj.Ledgers, _ = repository.GetLedgerList(r.BASEDB, userID, obj)
 	return obj.Ledgers, nil
 }
 
