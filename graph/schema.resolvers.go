@@ -36,14 +36,14 @@ func (r *ledgerResolver) Expenses(ctx context.Context, obj *model.Ledger) ([]*mo
 }
 
 func (r *ledgerEtcResolver) Ledgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
-	obj.Ledgers, _ = repository.GetLedgerList(r.BASEDB, userID, obj)
+	db := repository.LedgerDB{DB: r.BASEDB}
+	obj.Ledgers, _ = db.GetLedgerList(userID, obj)
 	return obj.Ledgers, nil
 }
 
 func (r *ledgerEtcResolver) Ledger(ctx context.Context, obj *model.LedgerEtc, id int) (*model.Ledger, error) {
-	var ledger model.Ledger
-	r.BASEDB.Table("ledger").Take(&ledger, "id=?", id)
-	return &ledger, nil
+	db := repository.LedgerDB{DB: r.BASEDB}
+	return db.GetLedger(id), nil
 }
 
 func (r *ledgerEtcResolver) ShareLedgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
