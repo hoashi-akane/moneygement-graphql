@@ -14,25 +14,23 @@ import (
 )
 
 func (r *expenseResolver) Category(ctx context.Context, obj *model.Expense) (*model.Category, error) {
-	var category model.Category
-	r.BASEDB.Table("category").Take(&category, "id=?", obj.CategoryID)
-	return &category, nil
+	db := repository.LedgerDB{DB: r.BASEDB}
+	return db.GetCategory(obj.CategoryID), nil
 }
 
 func (r *incomeResolver) Category(ctx context.Context, obj *model.Income) (*model.Category, error) {
-	var category model.Category
-	r.BASEDB.Table("category").Take(&category, "id=?", obj.CategoryID)
-	return &category, nil
+	db := repository.LedgerDB{DB: r.BASEDB}
+	return db.GetCategory(obj.CategoryID), nil
 }
 
 func (r *ledgerResolver) Incomes(ctx context.Context, obj *model.Ledger) ([]*model.Income, error) {
-	r.BASEDB.Table("incomes").Find(&obj.Incomes, "ledger_id=?", &obj.ID)
-	return obj.Incomes, nil
+	db := repository.LedgerDB{DB: r.BASEDB}
+	return db.GetIncomes(obj.ID), nil
 }
 
 func (r *ledgerResolver) Expenses(ctx context.Context, obj *model.Ledger) ([]*model.Expense, error) {
-	r.BASEDB.Table("expenses").Find(&obj.Expenses, "ledger_id=?", &obj.ID)
-	return obj.Expenses, nil
+	db := repository.LedgerDB{DB: r.BASEDB}
+	return db.GetExpenses(obj.ID), nil
 }
 
 func (r *ledgerEtcResolver) Ledgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
