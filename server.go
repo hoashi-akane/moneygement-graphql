@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/hoashi-akane/moneygement-graphql/graph/repository"
 	"github.com/jinzhu/gorm"
 	"log"
 	"net/http"
@@ -19,6 +20,9 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
+
+	repository.DbStart()
+	// TODO 移行後削除 56行まで
 	savingDb, err := gorm.Open("mysql", dataSourceSavings)
 	usrDb, err := gorm.Open("mysql", dataSourceUser)
 	baseDb, err := gorm.Open("mysql", dataSourceLedger)
@@ -49,6 +53,7 @@ func main() {
 	savingDb.LogMode(true)
 	usrDb.LogMode(true)
 	baseDb.LogMode(true)
+	// TODO ここまで
 
 	//opt := option.WithCredentialsFile("./moneygement-b0bff-firebase-adminsdk-zddus-3b4e07930b.json")
 	//app, err := firebase.NewApp(context.Background(), nil, opt)
@@ -69,4 +74,5 @@ func main() {
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+	defer repository.DbClose()
 }
