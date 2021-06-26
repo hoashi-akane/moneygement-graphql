@@ -14,45 +14,37 @@ import (
 )
 
 func (r *expenseResolver) Category(ctx context.Context, obj *model.Expense) (*model.Category, error) {
-	db := repository.LedgerDB{DB: r.BASEDB}
-	return db.GetCategory(obj.CategoryID), nil
+	return repository.NewLedgerDB().GetCategory(obj.CategoryID), nil
 }
 
 func (r *incomeResolver) Category(ctx context.Context, obj *model.Income) (*model.Category, error) {
-	db := repository.LedgerDB{DB: r.BASEDB}
-	return db.GetCategory(obj.CategoryID), nil
+	return repository.NewLedgerDB().GetCategory(obj.CategoryID), nil
 }
 
 func (r *ledgerResolver) Incomes(ctx context.Context, obj *model.Ledger) ([]*model.Income, error) {
-	db := repository.LedgerDB{DB: r.BASEDB}
-	return db.GetIncomes(obj.ID), nil
+	return repository.NewLedgerDB().GetIncomes(obj.ID), nil
 }
 
 func (r *ledgerResolver) Expenses(ctx context.Context, obj *model.Ledger) ([]*model.Expense, error) {
-	db := repository.LedgerDB{DB: r.BASEDB}
-	return db.GetExpenses(obj.ID), nil
+	return repository.NewLedgerDB().GetExpenses(obj.ID), nil
 }
 
 func (r *ledgerEtcResolver) Ledgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
-	db := repository.LedgerDB{DB: r.BASEDB}
-	obj.Ledgers, _ = db.GetLedgerList(userID, obj)
-	return obj.Ledgers, nil
+	return repository.NewLedgerDB().GetLedgerList(userID), nil
 }
 
 func (r *ledgerEtcResolver) Ledger(ctx context.Context, obj *model.LedgerEtc, id int) (*model.Ledger, error) {
-	db := repository.LedgerDB{DB: r.BASEDB}
-	return db.GetLedger(id), nil
+	return repository.NewLedgerDB().GetLedger(id), nil
 }
 
 func (r *ledgerEtcResolver) ShareLedgers(ctx context.Context, obj *model.LedgerEtc, userID int) ([]*model.Ledger, error) {
-	var enrollment []*model.Enrollment
-	r.USRDB.Table("enrollment").Find(&enrollment, "user_id=?", userID)
+	db := repository.NewLedgerDB()
+	enrollments := db.GetEnrollments(userID)
 	var groupSlice []int
-	for _, value := range enrollment {
+	for _, value := range enrollments {
 		groupSlice = append(groupSlice, value.GroupID)
 	}
-	r.BASEDB.Table("ledger").Find(&obj.Ledgers, "group_id IN (?)", groupSlice)
-	return obj.Ledgers, nil
+	return db.GetShareLedgerList(groupSlice), nil
 }
 
 func (r *ledgerEtcResolver) AdviserLedgers(ctx context.Context, obj *model.LedgerEtc, adviserID int) ([]*model.Ledger, error) {

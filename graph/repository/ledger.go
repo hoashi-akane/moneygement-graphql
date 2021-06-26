@@ -2,12 +2,18 @@ package repository
 
 import (
 	"github.com/hoashi-akane/moneygement-graphql/graph/model"
-	"github.com/jinzhu/gorm"
 )
 
-func (LedgerDB *LedgerDB) GetLedgerList(userId int, obj *model.LedgerEtc) ([]*model.Ledger, error){
-	LedgerDB.DB.Table("ledger").Find(&obj.Ledgers, "id=?", userId)
-	return obj.Ledgers, nil
+func (LedgerDB *LedgerDB) GetLedgerList(userId int) []*model.Ledger {
+	var ledgers []*model.Ledger
+	LedgerDB.DB.Table("ledger").Find(&ledgers, "id=?", userId)
+	return ledgers
+}
+
+func (LedgerDB *LedgerDB) GetShareLedgerList(groupIds []int) []*model.Ledger {
+	var ledgers []*model.Ledger
+	LedgerDB.DB.Table("ledger").Find(&ledgers, "group_id IN (?)", groupIds)
+	return ledgers
 }
 
 func (LedgerDB *LedgerDB) GetLedger(id int) *model.Ledger {
@@ -34,14 +40,18 @@ func (LedgerDB *LedgerDB) GetExpenses(ledgerId int) []*model.Expense {
 	return expenses
 }
 
+func (LedgerDB *LedgerDB) GetEnrollments(userID int) []*model.Enrollment {
+	var enrollment []*model.Enrollment
+	LedgerDB.DB.Table("enrollment").Find(&enrollment, "user_id=?", userID)
+	return enrollment
+}
+
 type LedgerDBInterface interface {
-	GetLedgerList(userId int, obj *model.LedgerEtc) ([]*model.Ledger, error)
+	GetLedgerList(userId int) []*model.Ledger
+	GetShareLedgerList(groupIds []int) []*model.Ledger
 	GetLedger(id int) *model.Ledger
 	GetCategory(id int) *model.Category
 	GetIncomes(ledgerId int) []*model.Income
 	GetExpenses(ledgerId int) []*model.Expense
-}
-
-type LedgerDB struct {
-	DB *gorm.DB
+	GetEnrollments(userID int) []*model.Enrollment
 }
