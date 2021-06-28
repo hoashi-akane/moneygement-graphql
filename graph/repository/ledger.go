@@ -22,6 +22,12 @@ func (LedgerDB *LedgerDB) GetLedger(id int) *model.Ledger {
 	return &ledger
 }
 
+func (LedgerDB *LedgerDB) GetAdviserLedgers(adviserId int) []*model.Ledger {
+	var ledgers []*model.Ledger
+	LedgerDB.DB.Table("ledger").Find(&ledgers, "adviser_id=?", adviserId)
+	return ledgers
+}
+
 func (LedgerDB *LedgerDB) GetCategory(id int) *model.Category {
 	var category model.Category
 	LedgerDB.DB.Table("category").Take(&category, "id=?", id)
@@ -46,12 +52,32 @@ func (LedgerDB *LedgerDB) GetEnrollments(userID int) []*model.Enrollment {
 	return enrollment
 }
 
+func (LedgerDB *LedgerDB) CreateLedger(newLedger *model.NewLedger) (int, error) {
+	err := LedgerDB.DB.Table("ledger").Create(&newLedger).Error
+	if err != nil {
+		return 0, err
+	}
+	return 1, nil
+}
+
+func (LedgerDB *LedgerDB) DeleteLedger(id int) (int, error) {
+	var ledger = model.Ledger{ID: id}
+	err := LedgerDB.DB.Table("ledger").Where("user_id=? AND group_id=0", id).Delete(&ledger).Error
+	if err != nil {
+		return 0, err
+	}
+	return 1, nil
+}
+
 type LedgerDBInterface interface {
 	GetLedgerList(userId int) []*model.Ledger
 	GetShareLedgerList(groupIds []int) []*model.Ledger
 	GetLedger(id int) *model.Ledger
+	GetAdviserLedgers(adviserId int) []*model.Ledger
 	GetCategory(id int) *model.Category
 	GetIncomes(ledgerId int) []*model.Income
 	GetExpenses(ledgerId int) []*model.Expense
 	GetEnrollments(userID int) []*model.Enrollment
+	CreateLedger(newLedger *model.NewLedger) (int, error)
+	DeleteLedger(id int) (int, error)
 }

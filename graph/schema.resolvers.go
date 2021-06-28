@@ -48,26 +48,16 @@ func (r *ledgerEtcResolver) ShareLedgers(ctx context.Context, obj *model.LedgerE
 }
 
 func (r *ledgerEtcResolver) AdviserLedgers(ctx context.Context, obj *model.LedgerEtc, adviserID int) ([]*model.Ledger, error) {
-	r.BASEDB.Table("ledger").Find(&obj.Ledgers, "adviser_id=?", adviserID)
-	return obj.Ledgers, nil
+	return repository.NewLedgerDB().GetAdviserLedgers(adviserID), nil
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error) {
 	var user = model.User{Nickname: input.NickName, Name: input.Name, Email: input.Email}
-
-	err := r.USRDB.Table("users").Create(&user).Error
-	if err != nil {
-		panic("エラ-")
+	newUser := repository.NewUserDB().InsertUser(&user, input.Password)
+	if newUser == nil {
 		return nil, nil
 	}
-	r.USRDB.Table("users").Find(&user, "email = ?", user.Email)
-
-	var auth = model.UserAuth{UserID: user.ID, Password: input.Password}
-	err = r.USRDB.Table("user_auth").Create(&auth).Error
-	if err != nil {
-		return nil, nil
-	}
-	return &user, nil
+	return newUser, nil
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input *model.UpdateUser) (*model.User, error) {
@@ -184,24 +174,22 @@ func (r *mutationResolver) CreateExpenseDetail(ctx context.Context, input *model
 }
 
 func (r *mutationResolver) CreateLedger(ctx context.Context, input *model.NewLedger) (*int, error) {
-	err := r.BASEDB.Table("ledger").Create(input).Error
+	rows, err := repository.NewLedgerDB().CreateLedger(input)
 	if err != nil {
 		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
 	}
-	return nil, nil
+	return &rows, nil
 }
 
 func (r *mutationResolver) DeleteLedger(ctx context.Context, input *model.DeleteLedger) (*int, error) {
 	if input == nil || input.ID == 0 {
 		return nil, nil
 	}
-	var ledger = model.Ledger{ID: input.ID}
-	err := r.BASEDB.Table("ledger").Where("user_id=? AND group_id=0", input.UserID).Delete(&ledger).Error
+	rows, err := repository.NewLedgerDB().DeleteLedger(input.ID)
 	if err != nil {
-		return nil, nil
+		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
 	}
-	var i = 1
-	return &i, nil
+	return &rows, nil
 }
 
 func (r *mutationResolver) DeleteGroup(ctx context.Context, groupID int) (*int, error) {
