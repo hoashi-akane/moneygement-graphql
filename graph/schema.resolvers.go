@@ -53,7 +53,7 @@ func (r *ledgerEtcResolver) AdviserLedgers(ctx context.Context, obj *model.Ledge
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*model.User, error) {
 	var user = model.User{Nickname: input.NickName, Name: input.Name, Email: input.Email}
-	newUser := repository.NewUserDB().InsertUser(&user, input.Password)
+	newUser := repository.NewUserDB().CreateUser(&user, input.Password)
 	if newUser == nil {
 		return nil, nil
 	}
@@ -66,17 +66,18 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input *model.UpdateUs
 		return nil, nil
 	}
 	// ユーザテーブル更新
-	err := r.USRDB.Table("users").Where("id = ?", input.ID).Updates(map[string]interface{}{"name": input.Name, "nickname": input.Nickname, "email": input.Email, "introduction": input.Introduction, "adviser_name": input.AdviserName}).Error
+	db := repository.NewUserDB()
+	_, err := db.UpdateUser(input)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	// 貯金テーブル更新 ( 目標貯金額
-	err = r.SAVDB.Table("savings").Where("userid=?", input.ID).Update("target_amount", input.TargetAmount).Error
+	_, err = repository.NewSavDB().UpdateTargetAmount(input)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	// ユーザ情報取得
-	r.USRDB.Table("users").Where("id=?", input.ID).Find(&user)
+	db.GetIdUser(input.ID)
 	return &user, nil
 }
 
@@ -84,93 +85,96 @@ func (r *mutationResolver) CreateAdviser(ctx context.Context, input *model.NewAd
 	if input.ID == 0 {
 		return nil, nil
 	}
-	err := r.USRDB.Table("users").Where("id=?", input.ID).Updates(map[string]interface{}{"name": input.Name, "introduction": input.Introduction, "adviser_name": input.AdviserName, "is_adviser": true}).Error
+	result, err := repository.NewUserDB().CreateAdviser(input)
 	if err != nil {
 		return nil, nil
 	}
-	var result = 1
 	return &result, nil
 }
 
 func (r *mutationResolver) AddGroupUser(ctx context.Context, input *model.NewGroupUser) (*int, error) {
-	var user model.User
-	r.USRDB.Table("users").Select("id").Find(&user, "email=? AND nickname=?", input.Email, input.NickName)
-	if user.ID == 0 {
-		return nil, nil
+	result, err := repository.NewUserDB().InsertGroupUser(input)
+	if err != nil {
+		return nil, err
 	}
-	var enrollment = model.Enrollment{UserID: user.ID, GroupID: input.GroupID}
-	r.USRDB.Table("enrollment").Create(&enrollment)
-	var i = 1
-	return &i, nil
+	return &result, nil
 }
 
 func (r *mutationResolver) AddUseAdviser(ctx context.Context, input *model.AddAdviser) (*int, error) {
 	if input == nil || input.AdviserID == 0 || input.LedgerID == 0 || input.UserID == 0 {
 		return nil, nil
 	}
-	err := r.BASEDB.Table("ledger").Where("id=? AND user_id=?", input.LedgerID, input.UserID).Updates(map[string]interface{}{"adviser_id": input.AdviserID}).Error
+	rows, err := repository.NewLedgerDB().AddUseAdviser(input)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
-	var i = 1
-	return &i, nil
+	return &rows, nil
 }
 
 func (r *mutationResolver) CreateGroup(ctx context.Context, input *model.NewGroup) (*int, error) {
 	// グループ作成
+	userDb := repository.NewUserDB()
 	var group = model.Group{Author: input.UserID, Name: input.GroupName}
-	err := r.USRDB.Table("groups").Create(&group).Error
+	_, err := userDb.CreateGroup(&group)
 	if err != nil {
-		return nil, nil
+		fmt.Println("エラー")
+		return nil, err
 	}
 	var enrollment = model.Enrollment{UserID: group.Author, GroupID: group.ID}
 	var ledger = model.Ledger{GroupID: group.ID, Name: input.LedgerName, UserID: input.UserID}
-	err = r.BASEDB.Table("ledger").Select("group_id", "name", "user_id").Create(&ledger).Error
+	_, err = repository.NewLedgerDB().CreateGroupLedger(&ledger)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
-	err = r.USRDB.Table("enrollment").Create(&enrollment).Error
+	_, err = userDb.CreateEnrollment(&enrollment)
 	if err != nil {
-		return nil, nil
+		fmt.Println("エラー")
+		return nil, err
 	}
 	return nil, nil
 }
 
 func (r *mutationResolver) CreateChat(ctx context.Context, input *model.NewChat) (*int, error) {
-	var err = r.USRDB.Table("chat").Create(&input).Error
+	result, err := repository.NewUserDB().CreateChat(input)
 	if err != nil {
 		fmt.Println("エラー")
-		return nil, nil
+		return nil, err
 	}
-	var result = 1
 	return &result, nil
 }
 
 func (r *mutationResolver) CreateSavingDetail(ctx context.Context, input *model.NewSavingDetail) (*int, error) {
 	// 登録処理
-	err := r.SAVDB.Table("savings_details").Create(&input).Error
-	//
+	result, err := repository.NewSavDB().CreateSavingDetail(input)
+
 	if err != nil {
 		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
+		return nil, err
 	}
 
-	return nil, nil
+	return &result, nil
 }
 
 func (r *mutationResolver) CreateIncomeDetail(ctx context.Context, input *model.NewIncomeDetail) (*int, error) {
-	err := r.BASEDB.Table("incomes").Create(&input).Error
+	result, err := repository.NewSavDB().CreateIncomeDetail(input)
+
 	if err != nil {
 		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
+		return nil, err
 	}
-	return nil, nil
+
+	return &result, nil
 }
 
 func (r *mutationResolver) CreateExpenseDetail(ctx context.Context, input *model.NewExpenseDetail) (*int, error) {
-	err := r.BASEDB.Table("expenses").Create(&input).Error
+	result, err := repository.NewSavDB().CreateExpenseDetail(input)
+
 	if err != nil {
 		panic(fmt.Errorf("構文エラーもしくは制約に引っかかっている"))
+		return nil, err
 	}
-	return nil, nil
+
+	return &result, nil
 }
 
 func (r *mutationResolver) CreateLedger(ctx context.Context, input *model.NewLedger) (*int, error) {
@@ -198,72 +202,39 @@ func (r *mutationResolver) DeleteGroup(ctx context.Context, groupID int) (*int, 
 	if groupID == 0 {
 		return nil, nil
 	}
-	var group = model.Group{ID: groupID}
 	// グループ削除
-	err := r.USRDB.Table("groups").Delete(&group).Error
+	_, err := repository.NewUserDB().DeleteGroup(groupID)
 	if err != nil {
 		log.Fatal("エラー")
+		return nil, err
 	}
-	var ledger = model.Ledger{GroupID: groupID}
 
 	// 家計簿削除
-	err = r.BASEDB.Table("ledger").Where("group_id =?", groupID).Delete(ledger).Error
+	result, err := repository.NewLedgerDB().DeleteGroupLedger(groupID)
 	if err != nil {
 		log.Fatal("エラー")
+		return nil, err
 	}
-	return nil, nil
+	return &result, nil
 }
 
 func (r *queryResolver) Login(ctx context.Context, input model.LoginInfo) (*model.User, error) {
-	var user model.User
-	r.USRDB.Table("users").Select("users.id, users.name, users.nickname, users.email, users.adviser_name, users.introduction, user_auth.token").Joins("left join user_auth on users.id = user_auth.user_id").Find(&user, "email = ? and user_auth.password = ?", input.Email, input.Password)
-
-	if &user.ID != nil && user.ID != 0 && user.Token != input.Token {
-		r.USRDB.Table("user_auth").Where("user_id=? AND password=?", user.ID, input.Password).Update("token", input.Token)
-	}
-	return &user, nil
+	user, _ := repository.NewUserDB().Login(&input)
+	return user, nil
 }
 
 func (r *queryResolver) AdviserList(ctx context.Context, input model.AdviserListFilter) ([]*model.User, error) {
-	var userList []*model.User
-	r.USRDB.Table("users").Select("id, adviser_name, introduction").Offset(input.First).Limit(input.Last).Find(&userList, "is_adviser=true")
+	userList, _ := repository.NewUserDB().GetAdviserList(&input)
 	return userList, nil
 }
 
 func (r *queryResolver) UseAdviserMemberList(ctx context.Context, input model.UseAdviserMemberFilter) ([]*model.AdviserMember, error) {
-	var adviserList []*model.AdviserMember
-	var userList []*model.User
-	var ledgerList []*model.Ledger
-	var userIdList []int
-	r.BASEDB.Table("ledger").Select("id, user_id, name").Find(&ledgerList, "adviser_id = ?", input.UserID)
-	for _, adviser := range ledgerList {
-		if userIdList == nil {
-			userIdList = append(userIdList, adviser.UserID)
-		} else {
-			for _, v := range userIdList {
-				if adviser.UserID != v {
-					userIdList = append(userIdList, v)
-				}
-			}
-		}
-	}
-
-	r.USRDB.Table("users").Find(&userList, "id IN (?)", userIdList)
-	for _, ledger := range ledgerList {
-		for _, user := range userList {
-			if ledger.UserID == user.ID {
-				var adviser = model.AdviserMember{ID: ledger.ID, UserID: user.ID, NickName: user.Nickname, LedgerName: ledger.Name}
-				adviserList = append(adviserList, &adviser)
-			}
-		}
-	}
-
+	adviserList, _ := repository.NewUserDB().GetAdviserMemberList(&input)
 	return adviserList, nil
 }
 
 func (r *queryResolver) ChatList(ctx context.Context, input model.ChatFilter) ([]*model.Chat, error) {
-	var chatList []*model.Chat
-	r.USRDB.Order("created_at desc").Table("chat").Select("chat.id, chat.ledger_id, chat.user_id, chat.comment, chat.created_at, users.nickname").Joins("left join users on chat.user_id = users.id").Offset(input.First).Limit(input.Last).Find(&chatList, "ledger_id = ?", input.LedgerID)
+	chatList, _ := repository.NewUserDB().GetChatList(&input)
 	return chatList, nil
 }
 
@@ -278,23 +249,18 @@ func (r *queryResolver) Ledger(ctx context.Context) (*model.LedgerEtc, error) {
 }
 
 func (r *savingResolver) SavingDetail(ctx context.Context, obj *model.Saving, userID int) (*model.Savings, error) {
-	var result model.Savings
-	r.SAVDB.Table("savings").Take(&result, "userid=?", userID)
-	return &result, nil
+	result := repository.NewSavDB().GetSavingDetail(userID)
+	return result, nil
 }
 
 func (r *savingResolver) SavingAmount(ctx context.Context, obj *model.Saving, userID int) (*model.SavingAmountList, error) {
-	var result model.SavingAmountList
-	r.SAVDB.Table("savings s").Select("COALESCE(SUM(sd.saving_amount),0) as saving_amount  , COALESCE(SUM(e.expense_amount), 0) as expense_amount").Joins("left outer join savings_details sd ON s.id = sd.saving_id").Joins("LEFT OUTER JOIN expenses e ON s.id = e.saving_id").Find(&result, "userid=?", userID)
-	return &result, nil
+	result := repository.NewSavDB().GetSavingAmount(userID)
+	return result, nil
 }
 
 func (r *savingResolver) SavingsDetails(ctx context.Context, obj *model.Saving, input model.SavingsDetailsFilter) ([]*model.SavingsDetail, error) {
 	// 家計簿の利用履歴を取得
-	var results []*model.SavingsDetail
-
-	// offset, limit句の代わりにPKに対してBETWEEN句を利用しカラムを指定。速度が早いっぽい
-	r.SAVDB.Table("savings_details sd").Order("saving_date DESC").Joins("RIGHT OUTER JOIN savings s ON sd.saving_id = s.id").Select("sd.id, sd.saving_id, sd.saving_amount, sd.note, sd.saving_date").Offset(input.First).Limit(input.Last).Find(&results, "s.userid=?", input.SavingsID)
+	results := repository.NewSavDB().GetSavingDetails(&input)
 	return results, nil
 }
 

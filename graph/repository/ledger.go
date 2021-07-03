@@ -60,9 +60,38 @@ func (LedgerDB *LedgerDB) CreateLedger(newLedger *model.NewLedger) (int, error) 
 	return 1, nil
 }
 
+func (LedgerDB *LedgerDB) CreateGroupLedger(ledger *model.Ledger) (int, error) {
+	err := LedgerDB.DB.Table("ledger").
+		Select("group_id", "name", "user_id").
+		Create(&ledger).Error
+	if err != nil {
+		return 0, err
+	}
+	return 1, nil
+}
+
 func (LedgerDB *LedgerDB) DeleteLedger(id int) (int, error) {
 	var ledger = model.Ledger{ID: id}
 	err := LedgerDB.DB.Table("ledger").Where("user_id=? AND group_id=0", id).Delete(&ledger).Error
+	if err != nil {
+		return 0, err
+	}
+	return 1, nil
+}
+
+func (LedgerDB *LedgerDB) DeleteGroupLedger(id int) (int, error) {
+	var ledger = model.Ledger{GroupID: id}
+	err := LedgerDB.DB.Table("ledger").
+		Where("group_id =?", id).Delete(ledger).Error
+	if err != nil {
+		return 0, err
+	}
+	return 1, nil
+}
+
+func (LedgerDB *LedgerDB) AddUseAdviser(adviser *model.AddAdviser) (int, error) {
+	err := LedgerDB.DB.Table("ledger").Where("id=? AND user_id=?", adviser.LedgerID, adviser.UserID).
+		Updates(map[string]interface{}{"adviser_id": adviser.AdviserID}).Error
 	if err != nil {
 		return 0, err
 	}
@@ -79,5 +108,8 @@ type LedgerDBInterface interface {
 	GetExpenses(ledgerId int) []*model.Expense
 	GetEnrollments(userID int) []*model.Enrollment
 	CreateLedger(newLedger *model.NewLedger) (int, error)
+	CreateGroupLedger(ledger *model.Ledger) (int, error)
 	DeleteLedger(id int) (int, error)
+	DeleteGroupLedger(id int) (int, error)
+	AddUseAdviser(adviser *model.AddAdviser) (int, error)
 }
